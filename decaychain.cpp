@@ -4,6 +4,7 @@
 #include <TMultiGraph.h>
 #include <TGraph.h>
 #include <TMath.h>
+#include <TLatex.h>
 #include <TRint.h>
 using namespace std;
 
@@ -53,6 +54,7 @@ int main (int argc, char** argv){
 	TRint rootapp("app",&argc,argv);
 
 	TCanvas *c1 = new TCanvas();
+	c1->Divide(1,2);
 
 	double seconds = 1.0;
 	double minutes = 60.0;
@@ -62,7 +64,7 @@ int main (int argc, char** argv){
 
 	double secondaryFlux = 1.0*TMath::Power(10.,7); // Particles per second
 	double T = 800.0; // K
-	double timelimit = 10.0*minutes;
+	double timelimit = 30.*minutes;
 
 	double E_wf_Mo = 4.6; // eV
 	double E_wf_Au = 5.1; // eV
@@ -108,9 +110,35 @@ int main (int argc, char** argv){
 	N->Add(g_211fr);
 	N->Add(g_209fr);
 
+	c1->cd(1);
+
 	N->Draw("AL");
 
-	c1->BuildLegend();
+	
+	c1->cd(2);
+
+	double decayrate_210fr = secondaryFlux*R_210fr*ionization(T,E_wf_Au,E_ip_Fr,0.5);
+	double decayrate_211fr = secondaryFlux*R_211fr*ionization(T,E_wf_Au,E_ip_Fr,0.5);
+	double decayrate_209fr = secondaryFlux*R_211fr*ionization(T,E_wf_Au,E_ip_Fr,0.5);
+	double num_210fr = N_210fr->Eval(timelimit);
+	double num_211fr = N_211fr->Eval(timelimit);
+	double num_209fr = N_209fr->Eval(timelimit);
+	double num_net = num_210fr + num_211fr + num_209fr;
+
+	TLatex l;
+	l.SetTextAlign(12);
+	l.SetTextSize(0.05);
+	l.DrawLatex(0.1,0.9,Form("After %g secods (assuming beam net flux %g Hz):",timelimit,secondaryFlux));
+	l.DrawLatex(0.2,0.8,Form("R({}^{210}Fr) = %g %%",100.*num_210fr/num_net));
+	l.DrawLatex(0.2,0.7,Form("#alpha ({}^{210}Fr) = %g MeV at %g Hz",e_210fr,decayrate_210fr));
+	l.DrawLatex(0.2,0.6,Form("R({}^{211}Fr) = %g %%",100.*num_211fr/num_net));
+	l.DrawLatex(0.2,0.5,Form("#alpha ({}^{211}Fr) = %g MeV at %g Hz",e_211fr,decayrate_211fr));
+	l.DrawLatex(0.2,0.4,Form("R({}^{209}Fr) = %g %%",100.*num_209fr/num_net));
+	l.DrawLatex(0.2,0.3,Form("#alpha ({}^{209}Fr) = %g MeV at %g Hz",e_209fr,decayrate_209fr));
+
+
+
+	c1->cd(1)->BuildLegend();
 	c1->Update();
 	c1->Modified();
 
