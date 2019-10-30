@@ -1,0 +1,8 @@
+Compare:
+
+- 10_10: 10 um Be + 8 mm He (gas) + 10 um Be
+- 10_15: 10 um Be + 8 mm He (gas) + 15 um Be
+- 15_10: 15 um Be + 8 mm He (gas) + 10 um Be
+- 15_15: 15 um Be + 8 mm He (gas) + 15 um Be
+
+with 113 MeV 18^O beam
