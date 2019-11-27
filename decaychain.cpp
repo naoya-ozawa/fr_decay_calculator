@@ -12,11 +12,12 @@ double parent(double *x,double *par){
 
 	double flux = par[0]; // particles per second as incoming beam
 	double lifetime = par[1]; // seconds
-//	double irrad_time = par[2]; // beam irradiation time (from start)
+	double n_init = par[2]; // initial number N_Fr(t=0)
+//	double irrad_time = par[3]; // beam irradiation time (from start) t_0
 	double time = x[0]; // seconds
 
 //	if (time < irrad_time){
-		return flux * lifetime * ( 1.0 - TMath::Exp(-time/lifetime));
+		return flux * lifetime  +  ( n_init - flux*lifetime) * TMath::Exp(-time/lifetime);
 //	}else{
 //		return flux*lifetime*(1.0-TMath::Exp(-irrad_time/lifetime)) * TMath::Exp(-(time-irrad_time)/lifetime);
 //	}
@@ -113,8 +114,8 @@ int main (int argc, char** argv){
 	double br_208fr = 0.89;
 	double t_208fr = 59.1*seconds/TMath::Log(2.);
 	double e_208fr = 6.641; // MeV
-	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,2);
-	N_208fr->SetParameters(flux_208fr,t_208fr);
+	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,3);
+	N_208fr->SetParameters(flux_208fr,t_208fr,0.0);
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
@@ -123,8 +124,8 @@ int main (int argc, char** argv){
 	double br_209fr = 0.89;
 	double t_209fr = 50.0*seconds/TMath::Log(2.);
 	double e_209fr = 6.646; // MeV
-	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,2);
-	N_209fr->SetParameters(flux_209fr,t_209fr);
+	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,3);
+	N_209fr->SetParameters(flux_209fr,t_209fr,0.0);
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
@@ -133,8 +134,8 @@ int main (int argc, char** argv){
 	double br_210fr = 0.71;
 	double t_210fr = 3.18*minutes/TMath::Log(2.);
 	double e_210fr = 6.545; // MeV
-	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,2);
-	N_210fr->SetParameters(flux_210fr,t_210fr);
+	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,3);
+	N_210fr->SetParameters(flux_210fr,t_210fr,0.0);
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
@@ -143,8 +144,8 @@ int main (int argc, char** argv){
 	double br_211fr = 0.80;
 	double t_211fr = 3.10*minutes/TMath::Log(2.);
 	double e_211fr = 6.537; // MeV
-	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,2);
-	N_211fr->SetParameters(flux_211fr,t_211fr);
+	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,3);
+	N_211fr->SetParameters(flux_211fr,t_211fr,0.0);
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
