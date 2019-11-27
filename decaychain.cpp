@@ -75,7 +75,7 @@ int main (int argc, char** argv){
 
 	double beam_current = 4000.; // enA of 18-O-6+
 	double primaryFlux = beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // Particles per second: for all the Fr isotopes total
-	double T = 1100.0; // K
+	double T = 1170.0; // K
 	double irradiation_time = 15.*minutes;
 	double timelimit = 30.*minutes;
 
@@ -159,8 +159,39 @@ int main (int argc, char** argv){
 	TF1 *N_208rn = new TF1("{}^{208}Rn",daughter_rn,0.,timelimit,8);
 	N_208rn->SetParameters(t_208rn,0.0,0.0,flux_208fr,t_208fr,br_208fr,irradiation_time);
 	TGraph *g_N208rn = new TGraph(N_208rn);
-	g_N208rn->SetMarkerColor(8);
-	g_N208rn->SetLineColor(8);
+	g_N208rn->SetMarkerColor(3);
+	g_N208rn->SetLineColor(3);
+	g_N208rn->SetLineStyle(6);
+
+	double br_209rn = 0.17;
+	double t_209rn = 28.5*minutes/TMath::Log(2.);
+	double e_209rn = 6.039; // MeV
+	TF1 *N_209rn = new TF1("{}^{209}Rn",daughter_rn,0.,timelimit,8);
+	N_209rn->SetParameters(t_209rn,0.0,0.0,flux_209fr,t_209fr,br_209fr,irradiation_time);
+	TGraph *g_N209rn = new TGraph(N_209rn);
+	g_N209rn->SetMarkerColor(4);
+	g_N209rn->SetLineColor(4);
+	g_N209rn->SetLineStyle(6);
+
+	double br_210rn = 0.96;
+	double t_210rn = 2.4*hours/TMath::Log(2.);
+	double e_210rn = 6.041; // MeV
+	TF1 *N_210rn = new TF1("{}^{210}Rn",daughter_rn,0.,timelimit,8);
+	N_210rn->SetParameters(t_210rn,0.0,0.0,flux_210fr,t_210fr,br_210fr,irradiation_time);
+	TGraph *g_N210rn = new TGraph(N_210rn);
+	g_N210rn->SetMarkerColor(2);
+	g_N210rn->SetLineColor(2);
+	g_N210rn->SetLineStyle(6);
+
+	double br_211rn = 0.27;
+	double t_211rn = 14.6*hours/TMath::Log(2.);
+	double e_211rn = 5.7839; // MeV
+	TF1 *N_211rn = new TF1("{}^{211}Rn",daughter_rn,0.,timelimit,8);
+	N_211rn->SetParameters(t_211rn,0.0,0.0,flux_211fr,t_211fr,br_211fr,irradiation_time);
+	TGraph *g_N211rn = new TGraph(N_211rn);
+	g_N211rn->SetMarkerColor(5);
+	g_N211rn->SetLineColor(5);
+	g_N211rn->SetLineStyle(6);
 
 
 	TMultiGraph *N = new TMultiGraph("N","Ions on the MCP Surface / in the MCP; Time Elapsed (s); Ions");
@@ -169,6 +200,9 @@ int main (int argc, char** argv){
 	N->Add(g_N210fr);
 	N->Add(g_N211fr);
 	N->Add(g_N208rn);
+	N->Add(g_N209rn);
+	N->Add(g_N210rn);
+	N->Add(g_N211rn);
 	N->Draw("AL");
 
 	c1->cd(3);
@@ -219,9 +253,43 @@ int main (int argc, char** argv){
 		g_alpha208rn->GetY()[i] = g_N208rn->GetY()[i]*att_eff*det_eff*dir_prob*br_208rn/t_208rn;
 	}
 	g_alpha208rn->SetTitle(Form("{}^{208}Rn: %g MeV",e_208rn));
-	g_alpha208rn->SetMarkerColor(8);
-	g_alpha208rn->SetLineColor(8);
+	g_alpha208rn->SetMarkerColor(3);
+	g_alpha208rn->SetLineColor(3);
 	g_alpha208rn->SetLineWidth(2);
+	g_alpha208rn->SetLineStyle(6);
+
+	TGraph *g_alpha209rn = new TGraph(g_N209rn->GetN());
+	for (int i=0; i<g_N209rn->GetN(); ++i) {
+		g_alpha209rn->GetX()[i] = g_N209rn->GetX()[i];
+		g_alpha209rn->GetY()[i] = g_N209rn->GetY()[i]*att_eff*det_eff*dir_prob*br_209rn/t_209rn;
+	}
+	g_alpha209rn->SetTitle(Form("{}^{209}Rn: %g MeV",e_209rn));
+	g_alpha209rn->SetMarkerColor(4);
+	g_alpha209rn->SetLineColor(4);
+	g_alpha209rn->SetLineWidth(2);
+	g_alpha209rn->SetLineStyle(6);
+
+	TGraph *g_alpha210rn = new TGraph(g_N210rn->GetN());
+	for (int i=0; i<g_N210rn->GetN(); ++i) {
+		g_alpha210rn->GetX()[i] = g_N210rn->GetX()[i];
+		g_alpha210rn->GetY()[i] = g_N210rn->GetY()[i]*att_eff*det_eff*dir_prob*br_210rn/t_210rn;
+	}
+	g_alpha210rn->SetTitle(Form("{}^{210}Rn: %g MeV",e_210rn));
+	g_alpha210rn->SetMarkerColor(2);
+	g_alpha210rn->SetLineColor(2);
+	g_alpha210rn->SetLineWidth(2);
+	g_alpha210rn->SetLineStyle(6);
+
+	TGraph *g_alpha211rn = new TGraph(g_N211rn->GetN());
+	for (int i=0; i<g_N211rn->GetN(); ++i) {
+		g_alpha211rn->GetX()[i] = g_N211rn->GetX()[i];
+		g_alpha211rn->GetY()[i] = g_N211rn->GetY()[i]*att_eff*det_eff*dir_prob*br_211rn/t_211rn;
+	}
+	g_alpha211rn->SetTitle(Form("{}^{211}Rn: %g MeV",e_211rn));
+	g_alpha211rn->SetMarkerColor(5);
+	g_alpha211rn->SetLineColor(5);
+	g_alpha211rn->SetLineWidth(2);
+	g_alpha211rn->SetLineStyle(6);
 
 
 	TMultiGraph *alpha = new TMultiGraph("alpha","Flux of #alpha Particles Detected at the SSD; Time Elapsed (s); #alpha Particles (/s)");
@@ -230,6 +298,9 @@ int main (int argc, char** argv){
 	alpha->Add(g_alpha210fr);
 	alpha->Add(g_alpha211fr);
 	alpha->Add(g_alpha208rn);
+	alpha->Add(g_alpha209rn);
+	alpha->Add(g_alpha210rn);
+	alpha->Add(g_alpha211rn);
 	alpha->Draw("AL");
 
 
