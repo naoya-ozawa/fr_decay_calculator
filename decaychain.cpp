@@ -51,6 +51,35 @@ double daughter_rn(double *x,double *par){
 	}
 }
 
+double daughter_at(double *x,double *par){
+
+	double lifetime = par[0]; // seconds
+	double n_init_fr = par[1]; // N_Fr(t=0)
+	double n_init_at = par[2]; // N_At(t=0)
+	double frFlux = par[3]; // particles per second as incoming beam
+	double frLifetime = par[4]; // seconds
+	double frBR = par[5]; // alpha-branching ratio
+	double irrad_time = par[6]; // beam irradiation time
+	double time = x[0]; // seconds
+
+	double DeltaTauFr = 1.0/((1.0/lifetime)-(1.0/frLifetime));
+
+	double constant_term = frBR*frFlux*lifetime;
+	double frdecay_coef = frBR*((n_init_fr/frLifetime)-frFlux)*DeltaTauFr;
+	double atdecay_coef = n_init_at - constant_term - frdecay_coef;
+
+	if (time < irrad_time){
+		return constant_term + frdecay_coef*TMath::Exp(-time/frLifetime) + atdecay_coef*TMath::Exp(-time/lifetime);
+	}else{
+		double n_fr_at_t0 = frFlux*frLifetime+(n_init_fr-frFlux*frLifetime)*TMath::Exp(-irrad_time/frLifetime);
+		double n_at_at_t0 = constant_term + frdecay_coef*TMath::Exp(-irrad_time/frLifetime) + atdecay_coef*TMath::Exp(-irrad_time/lifetime);
+		double fr_coef = frBR*(DeltaTauFr/frLifetime)*n_fr_at_t0;
+		double at_coef = n_at_at_t0 - fr_coef;
+		return fr_coef*TMath::Exp(-(time-irrad_time)/frLifetime) + at_coef*TMath::Exp(-(time-irrad_time)/lifetime);
+	}
+}
+
+
 double ni_ratio(double T, double E_wf, double E_ip, double sw){
 	double k = 8.61733 * TMath::Power(10.,-5); // eV/K
 	return sw * TMath::Exp( (E_wf - E_ip) / (k*T) );
@@ -193,6 +222,46 @@ int main (int argc, char** argv){
 	g_N211rn->SetLineColor(5);
 	g_N211rn->SetLineStyle(6);
 
+	double br_204at = 0.04;
+	double t_204at = 9.2*minutes/TMath::Log(2.);
+	double e_204at = 5.9503; // MeV
+	TF1 *N_204at = new TF1("{}^{204}At",daughter_at,0.,timelimit,8);
+	N_204at->SetParameters(t_204at,0.0,0.0,flux_208fr,t_208fr,br_208fr,irradiation_time);
+	TGraph *g_N204at = new TGraph(N_204at);
+	g_N204at->SetMarkerColor(3);
+	g_N204at->SetLineColor(3);
+	g_N204at->SetLineStyle(2);
+
+	double br_205at = 0.10;
+	double t_205at = 26.2*minutes/TMath::Log(2.);
+	double e_205at = 5.902; // MeV
+	TF1 *N_205at = new TF1("{}^{205}At",daughter_at,0.,timelimit,8);
+	N_205at->SetParameters(t_205at,0.0,0.0,flux_209fr,t_209fr,br_209fr,irradiation_time);
+	TGraph *g_N205at = new TGraph(N_205at);
+	g_N205at->SetMarkerColor(4);
+	g_N205at->SetLineColor(4);
+	g_N205at->SetLineStyle(2);
+
+	double br_206at = 0.0;
+	double t_206at = 30.6*minutes/TMath::Log(2.);
+	double e_206at = 0.0; // MeV
+	TF1 *N_206at = new TF1("{}^{206}At",daughter_at,0.,timelimit,8);
+	N_206at->SetParameters(t_206at,0.0,0.0,flux_210fr,t_210fr,br_210fr,irradiation_time);
+	TGraph *g_N206at = new TGraph(N_206at);
+	g_N206at->SetMarkerColor(2);
+	g_N206at->SetLineColor(2);
+	g_N206at->SetLineStyle(2);
+
+	double br_207at = 0.09;
+	double t_207at = 1.80*hours/TMath::Log(2.);
+	double e_207at = 5.758; // MeV
+	TF1 *N_207at = new TF1("{}^{207}At",daughter_at,0.,timelimit,8);
+	N_207at->SetParameters(t_207at,0.0,0.0,flux_211fr,t_211fr,br_211fr,irradiation_time);
+	TGraph *g_N207at = new TGraph(N_207at);
+	g_N207at->SetMarkerColor(5);
+	g_N207at->SetLineColor(5);
+	g_N207at->SetLineStyle(2);
+
 
 	TMultiGraph *N = new TMultiGraph("N","Ions on the MCP Surface / in the MCP; Time Elapsed (s); Ions");
 	N->Add(g_N208fr);
@@ -203,6 +272,10 @@ int main (int argc, char** argv){
 	N->Add(g_N209rn);
 	N->Add(g_N210rn);
 	N->Add(g_N211rn);
+	N->Add(g_N204at);
+	N->Add(g_N205at);
+	N->Add(g_N206at);
+	N->Add(g_N207at);
 	N->Draw("AL");
 
 	c1->cd(3);
@@ -291,6 +364,50 @@ int main (int argc, char** argv){
 	g_alpha211rn->SetLineWidth(2);
 	g_alpha211rn->SetLineStyle(6);
 
+	TGraph *g_alpha204at = new TGraph(g_N204at->GetN());
+	for (int i=0; i<g_N204at->GetN(); ++i) {
+		g_alpha204at->GetX()[i] = g_N204at->GetX()[i];
+		g_alpha204at->GetY()[i] = g_N204at->GetY()[i]*att_eff*det_eff*dir_prob*br_204at/t_204at;
+	}
+	g_alpha204at->SetTitle(Form("{}^{204}At: %g MeV",e_204at));
+	g_alpha204at->SetMarkerColor(3);
+	g_alpha204at->SetLineColor(3);
+	g_alpha204at->SetLineWidth(2);
+	g_alpha204at->SetLineStyle(2);
+
+	TGraph *g_alpha205at = new TGraph(g_N205at->GetN());
+	for (int i=0; i<g_N205at->GetN(); ++i) {
+		g_alpha205at->GetX()[i] = g_N205at->GetX()[i];
+		g_alpha205at->GetY()[i] = g_N205at->GetY()[i]*att_eff*det_eff*dir_prob*br_205at/t_205at;
+	}
+	g_alpha205at->SetTitle(Form("{}^{205}At: %g MeV",e_205at));
+	g_alpha205at->SetMarkerColor(4);
+	g_alpha205at->SetLineColor(4);
+	g_alpha205at->SetLineWidth(2);
+	g_alpha205at->SetLineStyle(2);
+
+	TGraph *g_alpha206at = new TGraph(g_N206at->GetN());
+	for (int i=0; i<g_N206at->GetN(); ++i) {
+		g_alpha206at->GetX()[i] = g_N206at->GetX()[i];
+		g_alpha206at->GetY()[i] = g_N206at->GetY()[i]*att_eff*det_eff*dir_prob*br_206at/t_206at;
+	}
+	g_alpha206at->SetTitle(Form("{}^{206}At: %g MeV",e_206at));
+	g_alpha206at->SetMarkerColor(2);
+	g_alpha206at->SetLineColor(2);
+	g_alpha206at->SetLineWidth(2);
+	g_alpha206at->SetLineStyle(2);
+
+	TGraph *g_alpha207at = new TGraph(g_N207at->GetN());
+	for (int i=0; i<g_N207at->GetN(); ++i) {
+		g_alpha207at->GetX()[i] = g_N207at->GetX()[i];
+		g_alpha207at->GetY()[i] = g_N207at->GetY()[i]*att_eff*det_eff*dir_prob*br_207at/t_207at;
+	}
+	g_alpha207at->SetTitle(Form("{}^{207}At: %g MeV",e_207at));
+	g_alpha207at->SetMarkerColor(5);
+	g_alpha207at->SetLineColor(5);
+	g_alpha207at->SetLineWidth(2);
+	g_alpha207at->SetLineStyle(2);
+
 
 	TMultiGraph *alpha = new TMultiGraph("alpha","Flux of #alpha Particles Detected at the SSD; Time Elapsed (s); #alpha Particles (/s)");
 	alpha->Add(g_alpha208fr);
@@ -301,6 +418,10 @@ int main (int argc, char** argv){
 	alpha->Add(g_alpha209rn);
 	alpha->Add(g_alpha210rn);
 	alpha->Add(g_alpha211rn);
+	alpha->Add(g_alpha204at);
+	alpha->Add(g_alpha205at);
+	alpha->Add(g_alpha206at);
+	alpha->Add(g_alpha207at);
 	alpha->Draw("AL");
 
 
