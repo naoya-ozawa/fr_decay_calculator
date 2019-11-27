@@ -13,14 +13,14 @@ double parent(double *x,double *par){
 	double flux = par[0]; // particles per second as incoming beam
 	double lifetime = par[1]; // seconds
 	double n_init = par[2]; // initial number N_Fr(t=0)
-//	double irrad_time = par[3]; // beam irradiation time (from start) t_0
+	double irrad_time = par[3]; // beam irradiation time (from start) t_0
 	double time = x[0]; // seconds
 
-//	if (time < irrad_time){
+	if (time < irrad_time){
 		return flux * lifetime  +  ( n_init - flux*lifetime) * TMath::Exp(-time/lifetime);
-//	}else{
-//		return flux*lifetime*(1.0-TMath::Exp(-irrad_time/lifetime)) * TMath::Exp(-(time-irrad_time)/lifetime);
-//	}
+	}else{
+		return (flux * lifetime  +  ( n_init - flux*lifetime) * TMath::Exp(-irrad_time/lifetime)) * TMath::Exp(-(time-irrad_time)/lifetime);
+	}
 }
 
 double daughter_rn(double *x,double *par){
@@ -31,7 +31,7 @@ double daughter_rn(double *x,double *par){
 	double frFlux = par[3]; // particles per second as incoming beam
 	double frLifetime = par[4]; // seconds
 	double frBR = par[5]; // alpha-branching ratio
-//	double irrad_time = par[6]; // beam irradiation time
+	double irrad_time = par[6]; // beam irradiation time
 	double time = x[0]; // seconds
 
 	double DeltaTauFr = 1.0/((1.0/lifetime)-(1.0/frLifetime));
@@ -40,10 +40,15 @@ double daughter_rn(double *x,double *par){
 	double frdecay_coef = (1.-frBR)*((n_init_fr/frLifetime)-frFlux)*DeltaTauFr;
 	double rndecay_coef = n_init_rn - constant_term - frdecay_coef;
 
-	double frdecay = TMath::Exp(-time/frLifetime);
-	double rndecay = TMath::Exp(-time/lifetime);
-
-	return constant_term + frdecay_coef*frdecay + rndecay_coef*rndecay;
+	if (time < irrad_time){
+		return constant_term + frdecay_coef*TMath::Exp(-time/frLifetime) + rndecay_coef*TMath::Exp(-time/lifetime);
+	}else{
+		double n_fr_at_t0 = frFlux*frLifetime+(n_init_fr-frFlux*frLifetime)*TMath::Exp(-irrad_time/frLifetime);
+		double n_rn_at_t0 = constant_term + frdecay_coef*TMath::Exp(-irrad_time/frLifetime) + rndecay_coef*TMath::Exp(-irrad_time/lifetime);
+		double fr_coef = (1.-frBR)*(DeltaTauFr/frLifetime)*n_fr_at_t0;
+		double rn_coef = n_rn_at_t0 - fr_coef;
+		return fr_coef*TMath::Exp(-(time-irrad_time)/frLifetime) + rn_coef*TMath::Exp(-(time-irrad_time)/lifetime);
+	}
 }
 
 double ni_ratio(double T, double E_wf, double E_ip, double sw){
@@ -71,6 +76,7 @@ int main (int argc, char** argv){
 	double beam_current = 4000.; // enA of 18-O-6+
 	double primaryFlux = beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // Particles per second: for all the Fr isotopes total
 	double T = 1100.0; // K
+	double irradiation_time = 15.*minutes;
 	double timelimit = 30.*minutes;
 
 	double E_wf_Mo = 4.6; // eV
@@ -111,8 +117,8 @@ int main (int argc, char** argv){
 	double br_208fr = 0.89;
 	double t_208fr = 59.1*seconds/TMath::Log(2.);
 	double e_208fr = 6.641; // MeV
-	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,3);
-	N_208fr->SetParameters(flux_208fr,t_208fr,0.0);
+	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,4);
+	N_208fr->SetParameters(flux_208fr,t_208fr,0.0,irradiation_time);
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
@@ -121,8 +127,8 @@ int main (int argc, char** argv){
 	double br_209fr = 0.89;
 	double t_209fr = 50.0*seconds/TMath::Log(2.);
 	double e_209fr = 6.646; // MeV
-	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,3);
-	N_209fr->SetParameters(flux_209fr,t_209fr,0.0);
+	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,4);
+	N_209fr->SetParameters(flux_209fr,t_209fr,0.0,irradiation_time);
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
@@ -131,8 +137,8 @@ int main (int argc, char** argv){
 	double br_210fr = 0.71;
 	double t_210fr = 3.18*minutes/TMath::Log(2.);
 	double e_210fr = 6.545; // MeV
-	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,3);
-	N_210fr->SetParameters(flux_210fr,t_210fr,0.0);
+	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,4);
+	N_210fr->SetParameters(flux_210fr,t_210fr,0.0,irradiation_time);
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
@@ -141,8 +147,8 @@ int main (int argc, char** argv){
 	double br_211fr = 0.80;
 	double t_211fr = 3.10*minutes/TMath::Log(2.);
 	double e_211fr = 6.537; // MeV
-	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,3);
-	N_211fr->SetParameters(flux_211fr,t_211fr,0.0);
+	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,4);
+	N_211fr->SetParameters(flux_211fr,t_211fr,0.0,irradiation_time);
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
@@ -150,8 +156,8 @@ int main (int argc, char** argv){
 	double br_208rn = 0.62;
 	double t_208rn = 24.35*minutes/TMath::Log(2.);
 	double e_208rn = 6.1401; // MeV
-	TF1 *N_208rn = new TF1("{}^{208}Rn",daughter_rn,0.,timelimit,7);
-	N_208rn->SetParameters(t_208rn,0.0,0.0,flux_208fr,t_208fr,br_208fr);
+	TF1 *N_208rn = new TF1("{}^{208}Rn",daughter_rn,0.,timelimit,8);
+	N_208rn->SetParameters(t_208rn,0.0,0.0,flux_208fr,t_208fr,br_208fr,irradiation_time);
 	TGraph *g_N208rn = new TGraph(N_208rn);
 	g_N208rn->SetMarkerColor(8);
 	g_N208rn->SetLineColor(8);
@@ -231,16 +237,16 @@ int main (int argc, char** argv){
 	c1->cd(4);
 
 	double flux_net = flux_208fr+flux_209fr+flux_210fr+flux_211fr;
-	double alpharate_208fr = g_alpha208fr->Eval(timelimit);
-	double alpharate_209fr = g_alpha209fr->Eval(timelimit);
-	double alpharate_210fr = g_alpha210fr->Eval(timelimit);
-	double alpharate_211fr = g_alpha211fr->Eval(timelimit);
+	double alpharate_208fr = g_alpha208fr->Eval(irradiation_time);
+	double alpharate_209fr = g_alpha209fr->Eval(irradiation_time);
+	double alpharate_210fr = g_alpha210fr->Eval(irradiation_time);
+	double alpharate_211fr = g_alpha211fr->Eval(irradiation_time);
 	double alpharate_net = alpharate_208fr+alpharate_209fr+alpharate_210fr+alpharate_211fr;
 
 	TLatex l;
 	l.SetTextAlign(12);
 	l.SetTextSize(0.05);
-	l.DrawLatex(0.1,0.9,Form("After %g seconds of beam irradiation (%g enA):",timelimit,beam_current));
+	l.DrawLatex(0.1,0.9,Form("After %g seconds of beam irradiation (%g enA):",irradiation_time,beam_current));
 	l.DrawLatex(0.2,0.8,Form("{}^{208}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_208fr,alpharate_208fr,e_208fr));
 	l.DrawLatex(0.2,0.7,Form("{}^{209}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_209fr,alpharate_209fr,e_209fr));
 	l.DrawLatex(0.2,0.6,Form("{}^{210}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_210fr,alpharate_210fr,e_210fr));
