@@ -114,6 +114,7 @@ int main (int argc, char** argv){
 	double E_ip_Fr = 4.07; // eV
 	double E_ip_Rn = 10.74850; // eV
 	double E_ip_At = 9.31751; // eV
+	double E_ip_Po = 8.418070; // eV
 
 	double diff_fac = 0.5; // probability that the Fr diffuses to the surface of the target
 	//double escape_eff = ?; // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
@@ -128,10 +129,11 @@ int main (int argc, char** argv){
 	ls_ratio->SetTextAlign(12);
 	ls_ratio->SetTextSize(0.05);
 	ls_ratio->DrawLatex(0.1,0.9,Form("Surface ionization probabilities at %g #circC",T-273.));
-	ls_ratio->DrawLatex(0.2,0.8,Form("Fr: %g %%",100.*ionization(T,E_wf_Au,E_ip_Fr,0.5)));
-	ls_ratio->DrawLatex(0.2,0.7,Form("Rn: %g %%",100.*ionization(T,E_wf_Au,E_ip_Rn,1.0)));
-	ls_ratio->DrawLatex(0.2,0.6,Form("At: %g %%",100.*ionization(T,E_wf_Au,E_ip_At,0.25)));
-	ls_ratio->DrawLatex(0.1,0.5,"We assume that only Fr is extracted from the target.");
+	ls_ratio->DrawLatex(0.2,0.8,Form("Fr: %g %%",100.*ionization(T,E_wf_Au,E_ip_Fr,1./2.)));
+	ls_ratio->DrawLatex(0.2,0.7,Form("Rn: %g %%",100.*ionization(T,E_wf_Au,E_ip_Rn,4./1.)));
+	ls_ratio->DrawLatex(0.2,0.6,Form("At: %g %%",100.*ionization(T,E_wf_Au,E_ip_At,5./4.)));
+	ls_ratio->DrawLatex(0.2,0.5,Form("Po: %g %%",100.*ionization(T,E_wf_Au,E_ip_Po,4./5.)));
+	ls_ratio->DrawLatex(0.1,0.4,"We assume that only Fr is extracted from the target.");
 
 
 	c1->cd(2);
