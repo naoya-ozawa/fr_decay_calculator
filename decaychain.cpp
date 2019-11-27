@@ -23,30 +23,27 @@ double parent(double *x,double *par){
 //	}
 }
 
-double daughter(double *x,double *par){
+double daughter_rn(double *x,double *par){
 
-	double flux = par[0]; // particles per second as incoming beam
-	double lifetime = par[1]; // seconds
-	double alphaParentFlux = par[2]; // particles per second as incoming beam
-	double alphaParentLifetime = par[3]; // seconds
-	double alphaParentBR = par[4]; // alpha-branching ratio
-	double betaParentFlux = par[5]; // particles per second as incoming beam
-	double betaParentLifetime = par[6]; // seconds
-	double betaParentBR = par[7]; // alpha-branching ratio
-	double irrad_time = par[8]; // beam irradiation time
+	double lifetime = par[0]; // seconds
+	double n_init_fr = par[1]; // N_Fr(t=0)
+	double n_init_rn = par[2]; // N_Rn(t=0)
+	double frFlux = par[3]; // particles per second as incoming beam
+	double frLifetime = par[4]; // seconds
+	double frBR = par[5]; // alpha-branching ratio
+//	double irrad_time = par[6]; // beam irradiation time
 	double time = x[0]; // seconds
 
-	double coef_daughter = flux * lifetime;
-	double dt_alphaParent = 1./((1./lifetime)-(1./alphaParentLifetime));
-	double coef_alphaParent = alphaParentFlux*alphaParentBR*dt_alphaParent;
-	double dt_betaParent = 1./((1./lifetime)-(1./betaParentLifetime));
-	double coef_betaParent = betaParentFlux*(1.0-betaParentBR)*dt_betaParent;
+	double DeltaTauFr = 1.0/((1.0/lifetime)-(1.0/frLifetime));
 
-	double exp_daughter = 1.0 - TMath::Exp(-time/lifetime);
-	double exp_alphaParent = TMath::Exp(-time/alphaParentLifetime) - TMath::Exp(-time/lifetime);
-	double exp_betaParent = TMath::Exp(-time/betaParentLifetime) - TMath::Exp(-time/lifetime);
+	double constant_term = (1.-frBR)*frFlux*lifetime;
+	double frdecay_coef = (1.-frBR)*((n_init_fr/frLifetime)-frFlux)*DeltaTauFr;
+	double rndecay_coef = n_init_rn - constant_term - frdecay_coef;
 
-	return coef_daughter*exp_daughter + coef_alphaParent*exp_alphaParent + coef_betaParent*exp_betaParent;
+	double frdecay = TMath::Exp(-time/frLifetime);
+	double rndecay = TMath::Exp(-time/lifetime);
+
+	return constant_term + frdecay_coef*frdecay + rndecay_coef*rndecay;
 }
 
 double ni_ratio(double T, double E_wf, double E_ip, double sw){
@@ -150,12 +147,22 @@ int main (int argc, char** argv){
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
 
+	double br_208rn = 0.62;
+	double t_208rn = 24.35*minutes/TMath::Log(2.);
+	double e_208rn = 6.1401; // MeV
+	TF1 *N_208rn = new TF1("{}^{208}Rn",daughter_rn,0.,timelimit,7);
+	N_208rn->SetParameters(t_208rn,0.0,0.0,flux_208fr,t_208fr,br_208fr);
+	TGraph *g_N208rn = new TGraph(N_208rn);
+	g_N208rn->SetMarkerColor(8);
+	g_N208rn->SetLineColor(8);
+
 
 	TMultiGraph *N = new TMultiGraph("N","Ions on the MCP Surface / in the MCP; Time Elapsed (s); Ions");
 	N->Add(g_N208fr);
 	N->Add(g_N209fr);
 	N->Add(g_N210fr);
 	N->Add(g_N211fr);
+	N->Add(g_N208rn);
 	N->Draw("AL");
 
 	c1->cd(3);
@@ -200,11 +207,23 @@ int main (int argc, char** argv){
 	g_alpha211fr->SetLineColor(5);
 	g_alpha211fr->SetLineWidth(2);
 
+	TGraph *g_alpha208rn = new TGraph(g_N208rn->GetN());
+	for (int i=0; i<g_N208rn->GetN(); ++i) {
+		g_alpha208rn->GetX()[i] = g_N208rn->GetX()[i];
+		g_alpha208rn->GetY()[i] = g_N208rn->GetY()[i]*att_eff*det_eff*dir_prob*br_208rn/t_208rn;
+	}
+	g_alpha208rn->SetTitle(Form("{}^{208}Rn: %g MeV",e_208rn));
+	g_alpha208rn->SetMarkerColor(8);
+	g_alpha208rn->SetLineColor(8);
+	g_alpha208rn->SetLineWidth(2);
+
+
 	TMultiGraph *alpha = new TMultiGraph("alpha","Flux of #alpha Particles Detected at the SSD; Time Elapsed (s); #alpha Particles (/s)");
 	alpha->Add(g_alpha208fr);
 	alpha->Add(g_alpha209fr);
 	alpha->Add(g_alpha210fr);
 	alpha->Add(g_alpha211fr);
+	alpha->Add(g_alpha208rn);
 	alpha->Draw("AL");
 
 
