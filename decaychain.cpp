@@ -89,6 +89,62 @@ double ionization(double T, double E_wf, double E_ip, double sw){
 	return ni_ratio(T,E_wf,E_ip,sw) / (1.0 + ni_ratio(T,E_wf,E_ip,sw));
 }
 
+double y_Fr(double tau,double D,double d){
+	double alpha = tau*D/(d*d);
+	return 0.5 * TMath::Sqrt(alpha) * TMath::TanH(1./TMath::Sqrt(alpha));
+}
+
+double Au_selfdiffusion(double T){
+  double Tm = 1338.0; // melting point (K)
+  double D_0_1 = 0.025; // cm^2 s^-1
+  double Q_1 = 1.7; // eV
+  double D_0_2 = 0.83; // cm^2 s^-1
+  double Q_2 = 2.2; // eV
+
+  if (T >= Tm){ // Lu2006
+    double D_Tm = 2.50*TMath::Power(10.0,-9); // m^2/s
+//    double M = 197.0; // g/mol
+//    double gamma_lv = 1.21; // J/m^2
+//    double r = 0.82*TMath::Power(10.0,-10); // m
+    double p = 0.13;
+    double q = -0.12;
+    return D_Tm*TMath::Power(10.,4) * TMath::Power(T/Tm,3./2.) / ( (1.+p-(p*T/Tm)) * TMath::Power(1.-q+(q*T/Tm),2./3.) );
+  }else{ // Neumann1986
+    double kB = 8.6*TMath::Power(10.,-5); // eV/K
+    return D_0_1*TMath::Exp(-Q_1/(kB*T)) + D_0_2*TMath::Exp(-Q_2/(kB*T)); // cm^2 s^-1
+  }
+}
+
+double D_m(double T, double m){
+  double m_Au = 197.0; // u
+  // Schoen1958
+  return TMath::Sqrt(m_Au/m)*Au_selfdiffusion(T);
+}
+
+double range(double peak_energy,double incident_energy){
+	// based on fit of the energy_dependence.cpp in the fr_production_calculator/SRIM_calculations
+	return -2.6 + 0.34 * incident_energy - 0.31 * peak_energy; // um
+}
+
+double depth_Fr(double energy, int isotope){
+	if (isotope == 208){
+		double peak = 115.; // MeV based on stancari2006 plot
+		return range(peak,energy)*TMath::Power(10.,-4); // cm
+	}else if (isotope == 209){
+		double peak = 100.; // MeV based on stancari2006 plot
+		return range(peak,energy)*TMath::Power(10.,-4); // cm
+	}else if (isotope == 210){
+		double peak = 90.; // MeV based on stancari2006 plot
+		return range(peak,energy)*TMath::Power(10.,-4); // cm
+	}else if (isotope == 211){
+		double peak = 82.; // MeV based on stancari2006 plot
+		return range(peak,energy)*TMath::Power(10.,-4); // cm
+	}else{
+		return -9999.;
+	}
+}
+
+
 int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
@@ -116,10 +172,8 @@ int main (int argc, char** argv){
 	double E_ip_At = 9.31751; // eV
 	double E_ip_Po = 8.418070; // eV
 
-	double diff_fac = 0.5; // probability that the Fr diffuses to the surface of the target
-	//double escape_eff = ?; // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
 	double si_eff = ionization(T,E_wf_Au,E_ip_Fr,0.5); // Surface ionizatin efficiency
-	double trans_eff = 0.3; // transportation efficiency from the target to the MCP surface
+	double trans_eff = 1.0; // transportation efficiency from the target to the MCP surface
 	double att_eff = 0.37; // Open-area-ratio of the MCP-IN surface
 	double det_eff = 0.005; // detection efficiency of the SSD is around 0.5%
 	double dir_prob = 0.5; // direction probability of the alpha emission = 1/2
@@ -144,40 +198,44 @@ int main (int argc, char** argv){
 	double R_208fr = 0.3e-06; // normalized flux from stancari2006
 
 
-	double flux_208fr = primaryFlux*R_208fr*diff_fac*si_eff*trans_eff;
 	double br_208fr = 0.89;
 	double t_208fr = 59.1*seconds/TMath::Log(2.);
 	double e_208fr = 6.641; // MeV
+	double escape_eff_208 = y_Fr(t_208fr,D_m(T,208.),depth_Fr(beam_energy,208)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
+	double flux_208fr = primaryFlux*R_208fr*escape_eff_208*si_eff*trans_eff;
 	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,4);
 	N_208fr->SetParameters(flux_208fr,t_208fr,0.0,irradiation_time);
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
 
-	double flux_209fr = primaryFlux*R_209fr*diff_fac*si_eff*trans_eff;
 	double br_209fr = 0.89;
 	double t_209fr = 50.0*seconds/TMath::Log(2.);
 	double e_209fr = 6.646; // MeV
+	double escape_eff_209 = y_Fr(t_209fr,D_m(T,209.),depth_Fr(beam_energy,209)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
+	double flux_209fr = primaryFlux*R_209fr*escape_eff_209*si_eff*trans_eff;
 	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,4);
 	N_209fr->SetParameters(flux_209fr,t_209fr,0.0,irradiation_time);
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
 
-	double flux_210fr = primaryFlux*R_210fr*diff_fac*si_eff*trans_eff;
 	double br_210fr = 0.71;
 	double t_210fr = 3.18*minutes/TMath::Log(2.);
 	double e_210fr = 6.545; // MeV
+	double escape_eff_210 = y_Fr(t_210fr,D_m(T,210.),depth_Fr(beam_energy,210)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
+	double flux_210fr = primaryFlux*R_210fr*escape_eff_210*si_eff*trans_eff;
 	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,4);
 	N_210fr->SetParameters(flux_210fr,t_210fr,0.0,irradiation_time);
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
 
-	double flux_211fr = primaryFlux*R_211fr*diff_fac*si_eff*trans_eff;
 	double br_211fr = 0.80;
 	double t_211fr = 3.10*minutes/TMath::Log(2.);
 	double e_211fr = 6.537; // MeV
+	double escape_eff_211 = y_Fr(t_211fr,D_m(T,211.),depth_Fr(beam_energy,211)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
+	double flux_211fr = primaryFlux*R_211fr*escape_eff_211*si_eff*trans_eff;
 	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,4);
 	N_211fr->SetParameters(flux_211fr,t_211fr,0.0,irradiation_time);
 	TGraph *g_N211fr = new TGraph(N_211fr);
