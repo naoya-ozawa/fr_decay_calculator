@@ -123,7 +123,8 @@ double D_m(double T, double m){
 
 double range(double peak_energy,double incident_energy){
 	// based on fit of the energy_dependence.cpp in the fr_production_calculator/SRIM_calculations
-	return -2.6 + 0.34 * incident_energy - 0.31 * peak_energy; // um
+	// incident_energy: MeV/u
+	return -2.6 + 0.34 * incident_energy*18. - 0.31 * peak_energy; // um
 }
 
 double depth_Fr(double energy, int isotope){
@@ -159,10 +160,32 @@ int main (int argc, char** argv){
 	double years = 365.0 * days;
 
 	double beam_current = 4000.; // enA of 18-O-6+
-	double primaryFlux = beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // Particles per second: for all the Fr isotopes total
-	double T = 1170.0; // K
+	double primaryFlux = beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // Particles per second: for 18-O
+	double T = 900. + 273.; // K
 	double irradiation_time = 15.*minutes;
 	double timelimit = 30.*minutes;
+
+	double beam_energy = 6.94; // MeV/u --> 112 MeV injected to target
+
+	// Production ratio of the Fr isotopes
+	double R_210fr = 4.4e-06; // normalized flux from stancari2006
+	double R_209fr = 3.1e-06; // normalized flux for 114 MeV
+	double R_211fr = 1.2e-06; // normalized flux from stancari2006
+	double R_208fr = 0.3e-06; // normalized flux from stancari2006
+
+	// Remaining alpha-emitters at the start
+	double N_208Fr_at_0 = 0.0;
+	double N_209Fr_at_0 = 0.0;
+	double N_210Fr_at_0 = 0.0;
+	double N_211Fr_at_0 = 0.0;
+	double N_208Rn_at_0 = 0.0;
+	double N_209Rn_at_0 = 0.0;
+	double N_210Rn_at_0 = 0.0;
+	double N_211Rn_at_0 = 0.0;
+	double N_204At_at_0 = 0.0;
+	double N_205At_at_0 = 0.0;
+	double N_206At_at_0 = 0.0;
+	double N_207At_at_0 = 0.0;
 
 	double E_wf_Mo = 4.6; // eV
 	double E_wf_Au = 5.1; // eV
@@ -182,21 +205,17 @@ int main (int argc, char** argv){
 	TLatex *ls_ratio = new TLatex();
 	ls_ratio->SetTextAlign(12);
 	ls_ratio->SetTextSize(0.05);
-	ls_ratio->DrawLatex(0.1,0.9,Form("Surface ionization probabilities at %g #circC",T-273.));
-	ls_ratio->DrawLatex(0.2,0.8,Form("Fr: %g %%",100.*ionization(T,E_wf_Au,E_ip_Fr,1./2.)));
-	ls_ratio->DrawLatex(0.2,0.7,Form("Rn: %g %%",100.*ionization(T,E_wf_Au,E_ip_Rn,4./1.)));
-	ls_ratio->DrawLatex(0.2,0.6,Form("At: %g %%",100.*ionization(T,E_wf_Au,E_ip_At,5./4.)));
-	ls_ratio->DrawLatex(0.2,0.5,Form("Po: %g %%",100.*ionization(T,E_wf_Au,E_ip_Po,4./5.)));
-	ls_ratio->DrawLatex(0.1,0.4,"We assume that only Fr is extracted from the target.");
+//	ls_ratio->DrawLatex(0.1,0.9,Form("Surface ionization probabilities at %g #circC",T-273.));
+//	ls_ratio->DrawLatex(0.2,0.8,Form("Fr: %g %%",100.*ionization(T,E_wf_Au,E_ip_Fr,1./2.)));
+//	ls_ratio->DrawLatex(0.2,0.7,Form("Rn: %g %%",100.*ionization(T,E_wf_Au,E_ip_Rn,4./1.)));
+//	ls_ratio->DrawLatex(0.2,0.6,Form("At: %g %%",100.*ionization(T,E_wf_Au,E_ip_At,5./4.)));
+//	ls_ratio->DrawLatex(0.2,0.5,Form("Po: %g %%",100.*ionization(T,E_wf_Au,E_ip_Po,4./5.)));
+	ls_ratio->DrawLatex(0.1,0.9,Form("Energy: %g MeV/u, Current: %g enA, Temperature: %g #circC",beam_energy,beam_current,T-273.));
+	ls_ratio->DrawLatex(0.1,0.8,Form("#varepsilon_{ionization}: %3.1f%%, #varepsilon_{extraction}: %3.1f%%, #varepsilon_{MCP}: %3.1f%%, #varepsilon_{SSD}: %3.1f%%",100.*si_eff,100.*trans_eff,100.*att_eff,100.*(det_eff*dir_prob)));
+	ls_ratio->DrawLatex(0.1,0.7,"We assume that only Fr is extracted from the target.");
 
 
 	c1->cd(2);
-	double beam_energy = 6.94; // MeV/u --> 112 MeV injected to target
-	double R_210fr = 4.4e-06; // normalized flux from stancari2006
-	double R_209fr = 3.1e-06; // normalized flux for 114 MeV
-	double R_211fr = 1.2e-06; // normalized flux from stancari2006
-	double R_208fr = 0.3e-06; // normalized flux from stancari2006
-
 
 	double br_208fr = 0.89;
 	double t_208fr = 59.1*seconds/TMath::Log(2.);
@@ -204,7 +223,7 @@ int main (int argc, char** argv){
 	double escape_eff_208 = y_Fr(t_208fr,D_m(T,208.),depth_Fr(beam_energy,208)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
 	double flux_208fr = primaryFlux*R_208fr*escape_eff_208*si_eff*trans_eff;
 	TF1 *N_208fr = new TF1("{}^{208}Fr",parent,0.,timelimit,4);
-	N_208fr->SetParameters(flux_208fr,t_208fr,0.0,irradiation_time);
+	N_208fr->SetParameters(flux_208fr,t_208fr,N_208Fr_at_0,irradiation_time);
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
@@ -215,7 +234,7 @@ int main (int argc, char** argv){
 	double escape_eff_209 = y_Fr(t_209fr,D_m(T,209.),depth_Fr(beam_energy,209)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
 	double flux_209fr = primaryFlux*R_209fr*escape_eff_209*si_eff*trans_eff;
 	TF1 *N_209fr = new TF1("{}^{209}Fr",parent,0.,timelimit,4);
-	N_209fr->SetParameters(flux_209fr,t_209fr,0.0,irradiation_time);
+	N_209fr->SetParameters(flux_209fr,t_209fr,N_209Fr_at_0,irradiation_time);
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
@@ -226,7 +245,7 @@ int main (int argc, char** argv){
 	double escape_eff_210 = y_Fr(t_210fr,D_m(T,210.),depth_Fr(beam_energy,210)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
 	double flux_210fr = primaryFlux*R_210fr*escape_eff_210*si_eff*trans_eff;
 	TF1 *N_210fr = new TF1("{}^{210}Fr",parent,0.,timelimit,4);
-	N_210fr->SetParameters(flux_210fr,t_210fr,0.0,irradiation_time);
+	N_210fr->SetParameters(flux_210fr,t_210fr,N_210Fr_at_0,irradiation_time);
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
@@ -237,7 +256,7 @@ int main (int argc, char** argv){
 	double escape_eff_211 = y_Fr(t_211fr,D_m(T,211.),depth_Fr(beam_energy,211)); // probability that the Fr escapes from the target within its lifetime --> dependent on temperature
 	double flux_211fr = primaryFlux*R_211fr*escape_eff_211*si_eff*trans_eff;
 	TF1 *N_211fr = new TF1("{}^{211}Fr",parent,0.,timelimit,4);
-	N_211fr->SetParameters(flux_211fr,t_211fr,0.0,irradiation_time);
+	N_211fr->SetParameters(flux_211fr,t_211fr,N_211Fr_at_0,irradiation_time);
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
@@ -246,7 +265,7 @@ int main (int argc, char** argv){
 	double t_208rn = 24.35*minutes/TMath::Log(2.);
 	double e_208rn = 6.1401; // MeV
 	TF1 *N_208rn = new TF1("{}^{208}Rn",daughter_rn,0.,timelimit,8);
-	N_208rn->SetParameters(t_208rn,0.0,0.0,flux_208fr,t_208fr,br_208fr,irradiation_time);
+	N_208rn->SetParameters(t_208rn,N_208Fr_at_0,N_208Rn_at_0,flux_208fr,t_208fr,br_208fr,irradiation_time);
 	TGraph *g_N208rn = new TGraph(N_208rn);
 	g_N208rn->SetMarkerColor(3);
 	g_N208rn->SetLineColor(3);
@@ -256,7 +275,7 @@ int main (int argc, char** argv){
 	double t_209rn = 28.5*minutes/TMath::Log(2.);
 	double e_209rn = 6.039; // MeV
 	TF1 *N_209rn = new TF1("{}^{209}Rn",daughter_rn,0.,timelimit,8);
-	N_209rn->SetParameters(t_209rn,0.0,0.0,flux_209fr,t_209fr,br_209fr,irradiation_time);
+	N_209rn->SetParameters(t_209rn,N_209Fr_at_0,N_209Rn_at_0,flux_209fr,t_209fr,br_209fr,irradiation_time);
 	TGraph *g_N209rn = new TGraph(N_209rn);
 	g_N209rn->SetMarkerColor(4);
 	g_N209rn->SetLineColor(4);
@@ -266,7 +285,7 @@ int main (int argc, char** argv){
 	double t_210rn = 2.4*hours/TMath::Log(2.);
 	double e_210rn = 6.041; // MeV
 	TF1 *N_210rn = new TF1("{}^{210}Rn",daughter_rn,0.,timelimit,8);
-	N_210rn->SetParameters(t_210rn,0.0,0.0,flux_210fr,t_210fr,br_210fr,irradiation_time);
+	N_210rn->SetParameters(t_210rn,N_210Fr_at_0,N_210Rn_at_0,flux_210fr,t_210fr,br_210fr,irradiation_time);
 	TGraph *g_N210rn = new TGraph(N_210rn);
 	g_N210rn->SetMarkerColor(2);
 	g_N210rn->SetLineColor(2);
@@ -276,7 +295,7 @@ int main (int argc, char** argv){
 	double t_211rn = 14.6*hours/TMath::Log(2.);
 	double e_211rn = 5.7839; // MeV
 	TF1 *N_211rn = new TF1("{}^{211}Rn",daughter_rn,0.,timelimit,8);
-	N_211rn->SetParameters(t_211rn,0.0,0.0,flux_211fr,t_211fr,br_211fr,irradiation_time);
+	N_211rn->SetParameters(t_211rn,N_211Fr_at_0,N_211Rn_at_0,flux_211fr,t_211fr,br_211fr,irradiation_time);
 	TGraph *g_N211rn = new TGraph(N_211rn);
 	g_N211rn->SetMarkerColor(5);
 	g_N211rn->SetLineColor(5);
@@ -286,7 +305,7 @@ int main (int argc, char** argv){
 	double t_204at = 9.2*minutes/TMath::Log(2.);
 	double e_204at = 5.9503; // MeV
 	TF1 *N_204at = new TF1("{}^{204}At",daughter_at,0.,timelimit,8);
-	N_204at->SetParameters(t_204at,0.0,0.0,flux_208fr,t_208fr,br_208fr,irradiation_time);
+	N_204at->SetParameters(t_204at,N_208Fr_at_0,N_204At_at_0,flux_208fr,t_208fr,br_208fr,irradiation_time);
 	TGraph *g_N204at = new TGraph(N_204at);
 	g_N204at->SetMarkerColor(3);
 	g_N204at->SetLineColor(3);
@@ -296,7 +315,7 @@ int main (int argc, char** argv){
 	double t_205at = 26.2*minutes/TMath::Log(2.);
 	double e_205at = 5.902; // MeV
 	TF1 *N_205at = new TF1("{}^{205}At",daughter_at,0.,timelimit,8);
-	N_205at->SetParameters(t_205at,0.0,0.0,flux_209fr,t_209fr,br_209fr,irradiation_time);
+	N_205at->SetParameters(t_205at,N_209Fr_at_0,N_205At_at_0,flux_209fr,t_209fr,br_209fr,irradiation_time);
 	TGraph *g_N205at = new TGraph(N_205at);
 	g_N205at->SetMarkerColor(4);
 	g_N205at->SetLineColor(4);
@@ -306,7 +325,7 @@ int main (int argc, char** argv){
 	double t_206at = 30.6*minutes/TMath::Log(2.);
 	double e_206at = 0.0; // MeV
 	TF1 *N_206at = new TF1("{}^{206}At",daughter_at,0.,timelimit,8);
-	N_206at->SetParameters(t_206at,0.0,0.0,flux_210fr,t_210fr,br_210fr,irradiation_time);
+	N_206at->SetParameters(t_206at,N_210Fr_at_0,N_206At_at_0,flux_210fr,t_210fr,br_210fr,irradiation_time);
 	TGraph *g_N206at = new TGraph(N_206at);
 	g_N206at->SetMarkerColor(2);
 	g_N206at->SetLineColor(2);
@@ -316,7 +335,7 @@ int main (int argc, char** argv){
 	double t_207at = 1.80*hours/TMath::Log(2.);
 	double e_207at = 5.758; // MeV
 	TF1 *N_207at = new TF1("{}^{207}At",daughter_at,0.,timelimit,8);
-	N_207at->SetParameters(t_207at,0.0,0.0,flux_211fr,t_211fr,br_211fr,irradiation_time);
+	N_207at->SetParameters(t_207at,N_211Fr_at_0,N_207At_at_0,flux_211fr,t_211fr,br_211fr,irradiation_time);
 	TGraph *g_N207at = new TGraph(N_207at);
 	g_N207at->SetMarkerColor(5);
 	g_N207at->SetLineColor(5);
@@ -337,6 +356,11 @@ int main (int argc, char** argv){
 	N->Add(g_N206at);
 	N->Add(g_N207at);
 	N->Draw("AL");
+
+	c1->cd(1);
+	ls_ratio->DrawLatex(0.1,0.6,"Escape efficiencies #varepsilon_{escape}:");
+	ls_ratio->DrawLatex(0.15,0.5,Form("{}^{208}Fr: %3.2f%%, {}^{209}Fr: %3.2f%%, {}^{210}Fr: %3.2f%%, {}^{211}Fr: %3.2f%%",100.*escape_eff_208,100.*escape_eff_209,100.*escape_eff_210,100.*escape_eff_211));
+
 
 	c1->cd(3);
 
@@ -503,7 +527,7 @@ int main (int argc, char** argv){
 	l.DrawLatex(0.2,0.7,Form("{}^{209}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_209fr,alpharate_209fr,e_209fr));
 	l.DrawLatex(0.2,0.6,Form("{}^{210}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_210fr,alpharate_210fr,e_210fr));
 	l.DrawLatex(0.2,0.5,Form("{}^{211}Fr: %g/s production, #alpha detection %g/s (%g MeV)",flux_211fr,alpharate_211fr,e_211fr));
-	l.DrawLatex(0.1,0.3,Form("TOTAL: %g/s production, #alpha detection %g/s",flux_net,alpharate_net));
+	l.DrawLatex(0.1,0.3,Form("TOTAL: %g/s production, #alpha detection %g/s from Fr",flux_net,alpharate_net));
 
 
 	c1->cd(2)->BuildLegend();
