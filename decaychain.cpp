@@ -9,36 +9,51 @@
 #include <TRint.h>
 using namespace std;
 
-// Function to calculate f_{^AFr} for each isotope A, given the O beam energy
+// Function to calculate f_{^AFr} (pps) for each isotope A, given the O beam energy
 // based on the Stancari2006 calculation
-double calc_flux(int A, double E, double j){
+// Includes extraction efficiency calculation
+double calc_flux(int A, double E, double j, double ext_eff){
 	// normalized production from Stancari2006
 	double energy[10] = {82.,86.,90.,94.,98.,102.,106.,110.,114.,118.}; // MeV incident
-	double fr208[10] = {0.,0.,0.,1.8,2.1e+01,3.1e+03,4.7e+04,2.3e+05,5.9e+05,1.8e+06}; // Hz for j = 1e+12 particles/s
+	double fr208[10] = {0.0,0.0,0.0,1.8,2.1e+01,3.1e+03,4.7e+04,2.3e+05,5.9e+05,1.8e+06}; // Hz for j = 1e+12 particles/s
 	double fr209[10] = {2.3e+01,7.6e+01,5.7e+03,1.2e+05,6.0e+05,1.5e+06,2.4e+06,2.9e+06,3.2e+06,3.2e+06};
 	double fr210[10] = {2.2e+04,3.8e+05,1.5e+06,2.9e+06,3.9e+06,4.3e+06,4.4e+06,4.4e+06,4.4e+06,4.4e+06};
 	double fr211[10] = {4.3e+05,8.9e+05,1.1e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06};
+	for (int i=0; i<10; ++i){
+		energy[i] /= 18.; // for 18O
+    fr208[i] /= TMath::Power(10.,12);
+    fr209[i] /= TMath::Power(10.,12);
+    fr210[i] /= TMath::Power(10.,12);
+    fr211[i] /= TMath::Power(10.,12);
+  }
+
+	double conv_factor = TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // enA --> pps
+	double init_flux = j * conv_factor; // enA --> pps
+//	cout << "Primary beam flux: " << init_flux << endl;
 
 	if (A==208){
 		TGraph *g208 = new TGraph(10,energy,fr208);
-		TSpline3 *s208 = new TSpline3("Spline Fit for 208",g208);
-		double flux208 = s208->Eval(E) * j;
-		return flux208;
+		TSpline5 *s208 = new TSpline5("Spline Fit for 208",g208);
+		double flux208 = s208->Eval(E) * init_flux;
+		cout << "flux (208Fr): " << flux208 << " pps" << endl;
+		return ext_eff*flux208;
 	}else if (A==209){
 		TGraph *g209 = new TGraph(10,energy,fr209);
 		TSpline3 *s209 = new TSpline3("Spline Fit for 209",g209);
-		double flux209 = s209->Eval(E) * j;
-		return flux209;
+		double flux209 = s209->Eval(E) * init_flux;
+//		cout << "flux (209Fr): " << flux209 << " pps" << endl;
+		return ext_eff*flux209*conv_factor;
 	}else if (A==210){
 		TGraph *g210 = new TGraph(10,energy,fr210);
 		TSpline3 *s210 = new TSpline3("Spline Fit for 210",g210);
-		double flux210 = s210->Eval(E) * j;
-		return flux210;
+		double flux210 = s210->Eval(E) * init_flux;
+		cout << "flux (210Fr): " << flux210 << " pps" << endl;
+		return ext_eff*flux210*conv_factor;
 	}else if (A==211){
 		TGraph *g211 = new TGraph(10,energy,fr211);
 		TSpline3 *s211 = new TSpline3("Spline Fit for 211",g211);
-		double flux211 = s211->Eval(E) * j;
-		return flux211;
+		double flux211 = s211->Eval(E) * init_flux;
+		return ext_eff*flux211;
 	}else{
 		return -9999.;
 	}
@@ -187,13 +202,14 @@ double b_AZ(int A, const char* Z){
 // N(t) for each species/isotopes
 double FranciumA(double *x,double *par){
 	int A = par[0]; // the species of interest (208/209/210/211)
-	double E = par[1]; // the primary beam energy (MeV)
+	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_AFr(t=0)
+	double ext_eff = par[3]; // extraction efficiency of AFr
+	double irrad_time = par[4]; // beam irradiation time (from start) t_0
+	double n_init = par[5]; // initial number N_AFr(t=0)
 	double t = x[0]; // seconds
 
-	double f_AFr = calc_flux(A,E,j); // particles per second produced in the Au target
+	double f_AFr = calc_flux(A,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_AFr = tau_AZ(A,"Fr"); // seconds (lifetime)
 
 	double tildeQ_A = f_AFr * tau_AFr;
@@ -210,14 +226,15 @@ double FranciumA(double *x,double *par){
 
 double AstatineAalpha(double *x,double *par){
 	int A = par[0]; // the species of interest (204/205/206/207)
-	double E = par[1]; // the primary beam energy (MeV)
+	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_AFr(t=0)
-	double n_init_at = par[5]; // initial number of At N_AAt(t=0)
+	double ext_eff = par[3]; // extraction efficiency of A+4Fr
+	double irrad_time = par[4]; // beam irradiation time (from start) t_0
+	double n_init = par[5]; // initial number N_AFr(t=0)
+	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
 	double t = x[0]; // seconds
 
-	double f_Ap4Fr = calc_flux(A+4,E,j); // particles per second produced in the Au target
+	double f_Ap4Fr = calc_flux(A+4,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_Ap4Fr = tau_AZ(A+4,"Fr"); // seconds (lifetime)
 	double tau_AAt = tau_AZ(A,"At"); // seconds (lifetime)
 	double Dt_AtFr = 1. / ((1./tau_AAt) - (1./tau_Ap4Fr)); // \Delta tau
@@ -242,14 +259,15 @@ double AstatineAalpha(double *x,double *par){
 
 double RadonA(double *x, double *par){
 	int A = par[0]; // the species of interest (208/209/210/211)
-	double E = par[1]; // the primary beam energy (MeV)
+	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_AFr(t=0)
-	double n_init_rn = par[5]; // initial number N_ARn(t=0)
+	double ext_eff = par[3]; // extraction efficiency of AFr
+	double irrad_time = par[4]; // beam irradiation time (from start) t_0
+	double n_init = par[5]; // initial number N_AFr(t=0)
+	double n_init_rn = par[6]; // initial number N_ARn(t=0)
 	double t = x[0]; // seconds
 
-	double f_AFr = calc_flux(A,E,j); // particles per second produced in the Au target
+	double f_AFr = calc_flux(A,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_AFr = tau_AZ(A,"Fr"); // seconds (lifetime)
 	double tau_ARn = tau_AZ(A,"Rn"); // seconds (lifetime)
 	double Dt_RnFr = 1. / ((1./tau_ARn) - (1./tau_AFr)); // \Delta tau
@@ -274,15 +292,16 @@ double RadonA(double *x, double *par){
 
 double AstatineAbeta(double *x, double *par){
 	int A = par[0]; // the species of interest (209/211)
-	double E = par[1]; // the primary beam energy (MeV)
+	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_AFr(t=0)
-	double n_init_rn = par[5]; // initial number of Rn N_ARn(t=0)
-	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
+	double ext_eff = par[3]; // extraction efficiency for AFr
+	double irrad_time = par[4]; // beam irradiation time (from start) t_0
+	double n_init = par[5]; // initial number N_AFr(t=0)
+	double n_init_rn = par[6]; // initial number of Rn N_ARn(t=0)
+	double n_init_at = par[7]; // initial number of At N_AAt(t=0)
 	double t = x[0]; // seconds
 
-	double f_AFr = calc_flux(A,E,j); // particles per second produced in the Au target
+	double f_AFr = calc_flux(A,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_AFr = tau_AZ(A,"Fr"); // seconds (lifetime)
 	double tau_ARn = tau_AZ(A,"Rn"); // seconds (lifetime)
 	double tau_AAt = tau_AZ(A,"At"); // seconds (lifetime)
@@ -318,16 +337,17 @@ double AstatineAbeta(double *x, double *par){
 
 double Polonium206(double *x, double *par){
 	int A = 206; // the species of interest (206)
-	double E = par[0]; // the primary beam energy (MeV)
+	double E = par[0]; // the primary beam energy (MeV/u)
 	double j = par[1]; // the primary beam current (enA)
-	double irrad_time = par[2]; // beam irradiation time (from start) t_0
-	double n_init = par[3]; // initial number N_A+4Fr(t=0)
-	double n_init_rn = par[4]; // initial number of Rn N_A+4Rn(t=0)
-	double n_init_at = par[5]; // initial number of At N_AAt(t=0)
-	double n_init_po = par[6]; // initial number of At N_APo(t=0)
+	double ext_eff = par[2]; // extraction efficiency for A+4Fr
+	double irrad_time = par[3]; // beam irradiation time (from start) t_0
+	double n_init = par[4]; // initial number N_A+4Fr(t=0)
+	double n_init_rn = par[5]; // initial number of Rn N_A+4Rn(t=0)
+	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
+	double n_init_po = par[7]; // initial number of At N_APo(t=0)
 	double t = x[0]; // seconds
 
-	double f_Ap4Fr = calc_flux(A+4,E,j); // particles per second produced in the Au target
+	double f_Ap4Fr = calc_flux(A+4,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_Ap4Fr = tau_AZ(A+4,"Fr"); // seconds (lifetime)
 	double tau_Ap4Rn = tau_AZ(A+4,"Rn"); // seconds (lifetime)
 	double tau_AAt = tau_AZ(A,"At"); // seconds (lifetime)
@@ -375,16 +395,17 @@ double Polonium206(double *x, double *par){
 
 double Polonium211(double *x, double *par){
 	int A = 211; // the species of interest (211)
-	double E = par[0]; // the primary beam energy (MeV)
+	double E = par[0]; // the primary beam energy (MeV/u)
 	double j = par[1]; // the primary beam current (enA)
-	double irrad_time = par[2]; // beam irradiation time (from start) t_0
-	double n_init = par[3]; // initial number N_AFr(t=0)
-	double n_init_rn = par[4]; // initial number of Rn N_ARn(t=0)
-	double n_init_at = par[5]; // initial number of At N_AAt(t=0)
-	double n_init_po = par[6]; // initial number of Po N_APo(t=0)
+	double ext_eff = par[2]; // extraction efficiency for AFr
+	double irrad_time = par[3]; // beam irradiation time (from start) t_0
+	double n_init = par[4]; // initial number N_AFr(t=0)
+	double n_init_rn = par[5]; // initial number of Rn N_ARn(t=0)
+	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
+	double n_init_po = par[7]; // initial number of Po N_APo(t=0)
 	double t = x[0]; // seconds
 
-	double f_AFr = calc_flux(A,E,j); // particles per second produced in the Au target
+	double f_AFr = calc_flux(A,E,j,ext_eff); // Fr transported (pps) to the MCP
 	double tau_AFr = tau_AZ(A,"Fr"); // seconds (lifetime)
 	double tau_ARn = tau_AZ(A,"Rn"); // seconds (lifetime)
 	double tau_AAt = tau_AZ(A,"At"); // seconds (lifetime)
@@ -432,63 +453,6 @@ double Polonium211(double *x, double *par){
 	}
 }
 
-double daughter_rn(double *x,double *par){
-
-	double lifetime = par[0]; // seconds
-	double n_init_fr = par[1]; // N_Fr(t=0)
-	double n_init_rn = par[2]; // N_Rn(t=0)
-	double frFlux = par[3]; // particles per second as incoming beam
-	double frLifetime = par[4]; // seconds
-	double frBR = par[5]; // alpha-branching ratio
-	double irrad_time = par[6]; // beam irradiation time
-	double time = x[0]; // seconds
-
-	double DeltaTauFr = 1.0/((1.0/lifetime)-(1.0/frLifetime));
-
-	double constant_term = (1.-frBR)*frFlux*lifetime;
-	double frdecay_coef = (1.-frBR)*((n_init_fr/frLifetime)-frFlux)*DeltaTauFr;
-	double rndecay_coef = n_init_rn - constant_term - frdecay_coef;
-
-	if (time < irrad_time){
-		return constant_term + frdecay_coef*TMath::Exp(-time/frLifetime) + rndecay_coef*TMath::Exp(-time/lifetime);
-	}else{
-		double n_fr_at_t0 = frFlux*frLifetime+(n_init_fr-frFlux*frLifetime)*TMath::Exp(-irrad_time/frLifetime);
-		double n_rn_at_t0 = constant_term + frdecay_coef*TMath::Exp(-irrad_time/frLifetime) + rndecay_coef*TMath::Exp(-irrad_time/lifetime);
-		double fr_coef = (1.-frBR)*(DeltaTauFr/frLifetime)*n_fr_at_t0;
-		double rn_coef = n_rn_at_t0 - fr_coef;
-		return fr_coef*TMath::Exp(-(time-irrad_time)/frLifetime) + rn_coef*TMath::Exp(-(time-irrad_time)/lifetime);
-	}
-}
-
-double daughter_at(double *x,double *par){
-
-	double lifetime = par[0]; // seconds
-	double n_init_fr = par[1]; // N_Fr(t=0)
-	double n_init_at = par[2]; // N_At(t=0)
-	double frFlux = par[3]; // particles per second as incoming beam
-	double frLifetime = par[4]; // seconds
-	double frBR = par[5]; // alpha-branching ratio
-	double irrad_time = par[6]; // beam irradiation time
-	double time = x[0]; // seconds
-
-	double DeltaTauFr = 1.0/((1.0/lifetime)-(1.0/frLifetime));
-
-	double constant_term = frBR*frFlux*lifetime;
-	double frdecay_coef = frBR*((n_init_fr/frLifetime)-frFlux)*DeltaTauFr;
-	double atdecay_coef = n_init_at - constant_term - frdecay_coef;
-
-	if (time < irrad_time){
-		return constant_term + frdecay_coef*TMath::Exp(-time/frLifetime) + atdecay_coef*TMath::Exp(-time/lifetime);
-	}else{
-		double n_fr_at_t0 = frFlux*frLifetime+(n_init_fr-frFlux*frLifetime)*TMath::Exp(-irrad_time/frLifetime);
-		double n_at_at_t0 = constant_term + frdecay_coef*TMath::Exp(-irrad_time/frLifetime) + atdecay_coef*TMath::Exp(-irrad_time/lifetime);
-		double fr_coef = frBR*(DeltaTauFr/frLifetime)*n_fr_at_t0;
-		double at_coef = n_at_at_t0 - fr_coef;
-		return fr_coef*TMath::Exp(-(time-irrad_time)/frLifetime) + at_coef*TMath::Exp(-(time-irrad_time)/lifetime);
-	}
-}
-
-
 double ni_ratio(double T, double E_wf, double E_ip, double sw){
 	double k = 8.61733 * TMath::Power(10.,-5); // eV/K
 	return sw * TMath::Exp( (E_wf - E_ip) / (k*T) );
@@ -501,8 +465,8 @@ double ionization(double T, double E_wf, double E_ip, double sw){
 double y_Fr(double tau,double D,double d){
 	double R_Au = 6.0 * 0.1; // mm --> cm
 	double alpha = tau*D/(d*d);
-	double theta = TMath::ATan(R_Au/d);
-	return 0.5 * (1. - TMath::Cos(theta)) * TMath::Sqrt(alpha) * TMath::TanH(1./TMath::Sqrt(alpha));
+	double x = R_Au/d;
+	return 0.5 * (1. - TMath::Cos(TMath::ATan(x))) * TMath::Sqrt(alpha) * TMath::TanH(1./TMath::Sqrt(alpha));
 }
 
 double Au_selfdiffusion(double T){
@@ -526,10 +490,10 @@ double Au_selfdiffusion(double T){
   }
 }
 
-double D_m(double T, double m){
+double D_m(double T, int A){
   double m_Au = 197.0; // u
   // Schoen1958
-  return TMath::Sqrt(m_Au/m)*Au_selfdiffusion(T);
+  return TMath::Sqrt(m_Au/double(A))*Au_selfdiffusion(T);
 }
 
 double range(double peak_energy,double incident_energy){
@@ -539,6 +503,7 @@ double range(double peak_energy,double incident_energy){
 }
 
 double depth_Fr(double energy, int isotope){
+	// energy: MeV/u
 	if (isotope == 208){
 		double peak = 115.; // MeV based on stancari2006 plot
 		return range(peak,energy)*TMath::Power(10.,-4); // cm
@@ -556,6 +521,32 @@ double depth_Fr(double energy, int isotope){
 	}
 }
 
+double extraction_eff(double energy, double temp, int A){
+
+	double E_wf_Mo = 4.6; // eV
+	double E_wf_Au = 5.1; // eV
+	double E_ip_Fr = 4.07; // eV
+	double E_ip_Rn = 10.74850; // eV
+	double E_ip_At = 9.31751; // eV
+	double E_ip_Po = 8.418070; // eV
+	double sw_Fr = 0.5; // statistical weight factor for Fr
+	double des_eff = 1.0; // desorption efficiency from the Au surface before decay (assumption)
+	double trans_eff = 1.0; // transportation efficiency from the target to the MCP surface (assumption)
+
+	double escape = y_Fr(tau_AZ(A,"Fr"),D_m(temp,A),depth_Fr(energy,A))*ionization(temp,E_wf_Au,E_ip_Fr,sw_Fr)*des_eff*trans_eff;
+
+	return escape;
+}
+
+double detection_eff(int A, const char* Z){
+	double br = b_AZ(A,Z);
+
+	double att_eff = 0.37; // Open-area-ratio of the MCP-IN surface
+	double geo_eff = 0.0042/2.; // detection efficiency of the SSD
+
+	return br*att_eff*geo_eff;
+}
+
 int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
@@ -569,19 +560,13 @@ int main (int argc, char** argv){
 	double days = 24.0 * hours;
 	double years = 365.0 * days;
 
-	double beam_current = 4000.; // enA of 18-O-6+
+	double beam_current = 1000.; // enA of 18-O-6+
 	double primaryFlux = beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // Particles per second: for 18-O
 	double T = 900. + 273.; // K
 	double irradiation_time = 15.*minutes;
 	double timelimit = 30.*minutes;
 
 	double beam_energy = 6.94; // MeV/u --> 112 MeV injected to target
-
-	// Production ratio of the Fr isotopes
-	double R_210fr = 4.4e-06; // normalized flux from stancari2006
-	double R_209fr = 3.1e-06; // normalized flux for 114 MeV
-	double R_211fr = 1.2e-06; // normalized flux from stancari2006
-	double R_208fr = 0.3e-06; // normalized flux from stancari2006
 
 	// Remaining alpha-emitters at the start
 	double N_208Fr_at_0 = 0.0;
@@ -601,148 +586,140 @@ int main (int argc, char** argv){
 	double N_206Po_at_0 = 0.0;
 	double N_211Po_at_0 = 0.0;
 
-	double E_wf_Mo = 4.6; // eV
-	double E_wf_Au = 5.1; // eV
+	// Extraction efficiencies: from the Au target to the MCP
+	double ext_208 = extraction_eff(beam_energy,T,208);
+	double ext_209 = extraction_eff(beam_energy,T,209);
+	double ext_210 = extraction_eff(beam_energy,T,210);
+	double ext_211 = extraction_eff(beam_energy,T,208);
 
-	double E_ip_Fr = 4.07; // eV
-	double E_ip_Rn = 10.74850; // eV
-	double E_ip_At = 9.31751; // eV
-	double E_ip_Po = 8.418070; // eV
-
-	double si_eff = ionization(T,E_wf_Au,E_ip_Fr,0.5); // Surface ionizatin efficiency
-	double des_eff = 1.0; // desorption efficiency from the Au surface before decay (assumption)
-	double trans_eff = 1.0; // transportation efficiency from the target to the MCP surface
-	double att_eff = 0.37; // Open-area-ratio of the MCP-IN surface
-	double det_eff = 0.005; // detection efficiency of the SSD is around 0.5%
-	double dir_prob = 0.5; // direction probability of the alpha emission = 1/2
 
 	c1->cd(1);
-	TLatex *ls_ratio = new TLatex();
-	ls_ratio->SetTextAlign(12);
-	ls_ratio->SetTextSize(0.05);
+//	TLatex *ls_ratio = new TLatex();
+//	ls_ratio->SetTextAlign(12);
+//	ls_ratio->SetTextSize(0.05);
 //	ls_ratio->DrawLatex(0.1,0.9,Form("Surface ionization probabilities at %g #circC",T-273.));
 //	ls_ratio->DrawLatex(0.2,0.8,Form("Fr: %g %%",100.*ionization(T,E_wf_Au,E_ip_Fr,1./2.)));
 //	ls_ratio->DrawLatex(0.2,0.7,Form("Rn: %g %%",100.*ionization(T,E_wf_Au,E_ip_Rn,4./1.)));
 //	ls_ratio->DrawLatex(0.2,0.6,Form("At: %g %%",100.*ionization(T,E_wf_Au,E_ip_At,5./4.)));
 //	ls_ratio->DrawLatex(0.2,0.5,Form("Po: %g %%",100.*ionization(T,E_wf_Au,E_ip_Po,4./5.)));
-	ls_ratio->DrawLatex(0.1,0.9,Form("Energy: %g MeV/u, Current: %g enA, Temperature: %g #circC",beam_energy,beam_current,T-273.));
-	ls_ratio->DrawLatex(0.1,0.8,"Y_{A}=#varepsilon_{signal}#varepsilon_{SSD}#varepsilon_{direction}(1-#varepsilon_{OAR})#varepsilon_{decay}#varepsilon_{transportation}#varepsilon_{desorption}#varepsilon_{ionization}#varepsilon_{escape}#frac{P_{A}}{j}I_0");
-	ls_ratio->DrawLatex(0.1,0.7,Form("#varepsilon_{ionization}: %3.1f%%, #varepsilon_{extraction}: %3.1f%%, 1-#varepsilon_{OAR}: %3.1f%%, #varepsilon_{SSD}: %3.1f%%",100.*si_eff,100.*trans_eff,100.*att_eff,100.*(det_eff*dir_prob)));
-	ls_ratio->DrawLatex(0.1,0.6,"We assume that only Fr is extracted from the target.");
+//	ls_ratio->DrawLatex(0.1,0.9,Form("Energy: %g MeV/u, Current: %g enA, Temperature: %g #circC",beam_energy,beam_current,T-273.));
+//	ls_ratio->DrawLatex(0.1,0.8,"Y_{A}=#varepsilon_{signal}#varepsilon_{SSD}#varepsilon_{direction}(1-#varepsilon_{OAR})#varepsilon_{decay}#varepsilon_{transportation}#varepsilon_{desorption}#varepsilon_{ionization}#varepsilon_{escape}#frac{P_{A}}{j}I_0");
+//	ls_ratio->DrawLatex(0.1,0.7,Form("#varepsilon_{ionization}: %3.1f%%, #varepsilon_{extraction}: %3.1f%%, 1-#varepsilon_{OAR}: %3.1f%%, #varepsilon_{SSD}: %3.1f%%",100.*si_eff,100.*trans_eff,100.*att_eff,100.*(det_eff*dir_prob)));
+//	ls_ratio->DrawLatex(0.1,0.6,"We assume that only Fr is extracted from the target.");
 
 
 	c1->cd(2);
 
-	TF1 *N_208fr = new TF1("{}^{208}Fr",FranciumA,0.,timelimit,5);
-	N_208fr->SetParameters(208,beam_energy*18.,beam_current,irradiation_time,N_208Fr_at_0);
+	TF1 *N_208fr = new TF1("{}^{208}Fr",FranciumA,0.,timelimit,6);
+	N_208fr->SetParameters(208,beam_energy,beam_current,ext_208,irradiation_time,N_208Fr_at_0);
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
 
-	TF1 *N_209fr = new TF1("{}^{209}Fr",FranciumA,0.,timelimit,5);
-	N_209fr->SetParameters(209,beam_energy*18.,beam_current,irradiation_time,N_209Fr_at_0);
+	TF1 *N_209fr = new TF1("{}^{209}Fr",FranciumA,0.,timelimit,6);
+	N_209fr->SetParameters(209,beam_energy,beam_current,ext_209,irradiation_time,N_209Fr_at_0);
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
 
-	TF1 *N_210fr = new TF1("{}^{210}Fr",FranciumA,0.,timelimit,5);
-	N_210fr->SetParameters(210,beam_energy*18.,beam_current,irradiation_time,N_210Fr_at_0);
+	TF1 *N_210fr = new TF1("{}^{210}Fr",FranciumA,0.,timelimit,6);
+	N_210fr->SetParameters(210,beam_energy,beam_current,ext_210,irradiation_time,N_210Fr_at_0);
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
 
-	TF1 *N_211fr = new TF1("{}^{211}Fr",FranciumA,0.,timelimit,5);
-	N_211fr->SetParameters(211,beam_energy*18.,beam_current,irradiation_time,N_211Fr_at_0);
+	TF1 *N_211fr = new TF1("{}^{211}Fr",FranciumA,0.,timelimit,6);
+	N_211fr->SetParameters(211,beam_energy,beam_current,ext_211,irradiation_time,N_211Fr_at_0);
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
 
-	TF1 *N_208rn = new TF1("{}^{208}Rn",RadonA,0.,timelimit,6);
-	N_208rn->SetParameters(208,beam_energy*18.,beam_current,irradiation_time,N_208Fr_at_0,N_208Rn_at_0);
+	TF1 *N_208rn = new TF1("{}^{208}Rn",RadonA,0.,timelimit,7);
+	N_208rn->SetParameters(208,beam_energy,beam_current,ext_208,irradiation_time,N_208Fr_at_0,N_208Rn_at_0);
 	TGraph *g_N208rn = new TGraph(N_208rn);
 	g_N208rn->SetMarkerColor(3);
 	g_N208rn->SetLineColor(3);
 	g_N208rn->SetLineStyle(6);
 
-	TF1 *N_209rn = new TF1("{}^{209}Rn",RadonA,0.,timelimit,6);
-	N_209rn->SetParameters(209,beam_energy*18.,beam_current,irradiation_time,N_209Fr_at_0,N_209Rn_at_0);
+	TF1 *N_209rn = new TF1("{}^{209}Rn",RadonA,0.,timelimit,7);
+	N_209rn->SetParameters(209,beam_energy,beam_current,ext_209,irradiation_time,N_209Fr_at_0,N_209Rn_at_0);
 	TGraph *g_N209rn = new TGraph(N_209rn);
 	g_N209rn->SetMarkerColor(4);
 	g_N209rn->SetLineColor(4);
 	g_N209rn->SetLineStyle(6);
 
-	TF1 *N_210rn = new TF1("{}^{210}Rn",RadonA,0.,timelimit,6);
-	N_210rn->SetParameters(210,beam_energy*18.,beam_current,irradiation_time,N_210Fr_at_0,N_210Rn_at_0);
+	TF1 *N_210rn = new TF1("{}^{210}Rn",RadonA,0.,timelimit,7);
+	N_210rn->SetParameters(210,beam_energy,beam_current,ext_210,irradiation_time,N_210Fr_at_0,N_210Rn_at_0);
 	TGraph *g_N210rn = new TGraph(N_210rn);
 	g_N210rn->SetMarkerColor(2);
 	g_N210rn->SetLineColor(2);
 	g_N210rn->SetLineStyle(6);
 
-	TF1 *N_211rn = new TF1("{}^{211}Rn",RadonA,0.,timelimit,6);
-	N_211rn->SetParameters(211,beam_energy*18.,beam_current,irradiation_time,N_211Fr_at_0,N_211Rn_at_0);
+	TF1 *N_211rn = new TF1("{}^{211}Rn",RadonA,0.,timelimit,7);
+	N_211rn->SetParameters(211,beam_energy,beam_current,ext_211,irradiation_time,N_211Fr_at_0,N_211Rn_at_0);
 	TGraph *g_N211rn = new TGraph(N_211rn);
 	g_N211rn->SetMarkerColor(5);
 	g_N211rn->SetLineColor(5);
 	g_N211rn->SetLineStyle(6);
 
-	TF1 *N_204at = new TF1("{}^{204}At",AstatineAalpha,0.,timelimit,6);
-	N_204at->SetParameters(204,beam_energy*18.,beam_current,irradiation_time,N_208Fr_at_0,N_204At_at_0);
+	TF1 *N_204at = new TF1("{}^{204}At",AstatineAalpha,0.,timelimit,7);
+	N_204at->SetParameters(204,beam_energy,beam_current,ext_208,irradiation_time,N_208Fr_at_0,N_204At_at_0);
 	TGraph *g_N204at = new TGraph(N_204at);
 	g_N204at->SetMarkerColor(3);
 	g_N204at->SetLineColor(3);
 	g_N204at->SetLineStyle(2);
 
-	TF1 *N_205at = new TF1("{}^{205}At",AstatineAalpha,0.,timelimit,6);
-	N_205at->SetParameters(205,beam_energy*18.,beam_current,irradiation_time,N_209Fr_at_0,N_205At_at_0);
+	TF1 *N_205at = new TF1("{}^{205}At",AstatineAalpha,0.,timelimit,7);
+	N_205at->SetParameters(205,beam_energy,beam_current,ext_209,irradiation_time,N_209Fr_at_0,N_205At_at_0);
 	TGraph *g_N205at = new TGraph(N_205at);
 	g_N205at->SetMarkerColor(4);
 	g_N205at->SetLineColor(4);
 	g_N205at->SetLineStyle(2);
 
-	TF1 *N_206at = new TF1("{}^{206}At",AstatineAalpha,0.,timelimit,6);
-	N_206at->SetParameters(206,beam_energy*18.,beam_current,irradiation_time,N_210Fr_at_0,N_206At_at_0);
+	TF1 *N_206at = new TF1("{}^{206}At",AstatineAalpha,0.,timelimit,7);
+	N_206at->SetParameters(206,beam_energy,beam_current,ext_210,irradiation_time,N_210Fr_at_0,N_206At_at_0);
 	TGraph *g_N206at = new TGraph(N_206at);
 	g_N206at->SetMarkerColor(2);
 	g_N206at->SetLineColor(2);
 	g_N206at->SetLineStyle(2);
 
-	TF1 *N_207at = new TF1("{}^{207}At",AstatineAalpha,0.,timelimit,6);
-	N_207at->SetParameters(207,beam_energy*18.,beam_current,irradiation_time,N_211Fr_at_0,N_207At_at_0);
+	TF1 *N_207at = new TF1("{}^{207}At",AstatineAalpha,0.,timelimit,7);
+	N_207at->SetParameters(207,beam_energy,beam_current,ext_211,irradiation_time,N_211Fr_at_0,N_207At_at_0);
 	TGraph *g_N207at = new TGraph(N_207at);
 	g_N207at->SetMarkerColor(5);
 	g_N207at->SetLineColor(5);
 	g_N207at->SetLineStyle(2);
 
-	TF1 *N_209at = new TF1("{}^{209}At",AstatineAbeta,0.,timelimit,7);
-	N_209at->SetParameters(209,beam_energy*18.,beam_current,irradiation_time,N_209Fr_at_0,N_209Rn_at_0,N_209At_at_0);
+	TF1 *N_209at = new TF1("{}^{209}At",AstatineAbeta,0.,timelimit,8);
+	N_209at->SetParameters(209,beam_energy,beam_current,ext_209,irradiation_time,N_209Fr_at_0,N_209Rn_at_0,N_209At_at_0);
 	TGraph *g_N209at = new TGraph(N_209at);
 	g_N209at->SetMarkerColor(4);
 	g_N209at->SetLineColor(4);
 	g_N209at->SetLineStyle(4);
 
-	TF1 *N_211at = new TF1("{}^{211}At",AstatineAbeta,0.,timelimit,7);
-	N_211at->SetParameters(211,beam_energy*18.,beam_current,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0);
+	TF1 *N_211at = new TF1("{}^{211}At",AstatineAbeta,0.,timelimit,8);
+	N_211at->SetParameters(211,beam_energy,beam_current,ext_211,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0);
 	TGraph *g_N211at = new TGraph(N_211at);
 	g_N211at->SetMarkerColor(5);
 	g_N211at->SetLineColor(5);
 	g_N211at->SetLineStyle(4);
 
-	TF1 *N_206po = new TF1("{}^{206}Po",Polonium206,0.,timelimit,7);
-	N_206po->SetParameters(beam_energy*18.,beam_current,irradiation_time,N_210Fr_at_0,N_210Rn_at_0,N_206At_at_0,N_206Po_at_0);
+	TF1 *N_206po = new TF1("{}^{206}Po",Polonium206,0.,timelimit,8);
+	N_206po->SetParameters(beam_energy,beam_current,ext_210,irradiation_time,N_210Fr_at_0,N_210Rn_at_0,N_206At_at_0,N_206Po_at_0);
 	TGraph *g_N206po = new TGraph(N_206po);
 	g_N206po->SetMarkerColor(2);
 	g_N206po->SetLineColor(2);
 	g_N206po->SetLineStyle(9);
 
-	TF1 *N_211po = new TF1("{}^{211}Po",Polonium211,0.,timelimit,7);
-	N_211po->SetParameters(beam_energy*18.,beam_current,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0,N_211Po_at_0);
+	TF1 *N_211po = new TF1("{}^{211}Po",Polonium211,0.,timelimit,8);
+	N_211po->SetParameters(beam_energy,beam_current,ext_211,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0,N_211Po_at_0);
 	TGraph *g_N211po = new TGraph(N_211po);
 	g_N211po->SetMarkerColor(5);
 	g_N211po->SetLineColor(5);
 	g_N206po->SetLineStyle(9);
 
 
-	TMultiGraph *N = new TMultiGraph("N","Ions created in the Au target; Time Elapsed (s); Ions");
+	TMultiGraph *N = new TMultiGraph("N","Ions at the MCP; Time Elapsed (s); Ions");
 	N->Add(g_N208fr);
 	N->Add(g_N209fr);
 	N->Add(g_N210fr);
@@ -768,60 +745,55 @@ int main (int argc, char** argv){
 
 	c1->cd(3);
 
-	double eff_208fr = y_Fr(tau_AZ(208,"Fr"),D_m(T,208),depth_Fr(beam_energy,208))*si_eff*des_eff*trans_eff*att_eff*det_eff*dir_prob;
 	double e_208fr = 6.641; // MeV
 	TGraph *g_alpha208fr = new TGraph(g_N208fr->GetN());
 	for (int i=0; i<g_N208fr->GetN(); ++i) {
 		g_alpha208fr->GetX()[i] = g_N208fr->GetX()[i];
-		g_alpha208fr->GetY()[i] = g_N208fr->GetY()[i]*eff_208fr*b_AZ(208,"Fr")/tau_AZ(208,"Fr");
+		g_alpha208fr->GetY()[i] = g_N208fr->GetY()[i]*detection_eff(208,"Fr")/tau_AZ(208,"Fr");
 	}
 	g_alpha208fr->SetTitle(Form("{}^{208}Fr: %g MeV",e_208fr));
 	g_alpha208fr->SetMarkerColor(3);
 	g_alpha208fr->SetLineColor(3);
 	g_alpha208fr->SetLineWidth(2);
 
-	double eff_209fr = y_Fr(tau_AZ(209,"Fr"),D_m(T,209),depth_Fr(beam_energy,209))*si_eff*des_eff*trans_eff*att_eff*det_eff*dir_prob;
 	double e_209fr = 6.646; // MeV
 	TGraph *g_alpha209fr = new TGraph(g_N209fr->GetN());
 	for (int i=0; i<g_N209fr->GetN(); ++i) {
 		g_alpha209fr->GetX()[i] = g_N209fr->GetX()[i];
-		g_alpha209fr->GetY()[i] = g_N209fr->GetY()[i]*eff_209fr*b_AZ(209,"Fr")/tau_AZ(209,"Fr");
+		g_alpha209fr->GetY()[i] = g_N209fr->GetY()[i]*detection_eff(209,"Fr")/tau_AZ(209,"Fr");
 	}
 	g_alpha209fr->SetTitle(Form("{}^{209}Fr: %g MeV",e_209fr));
 	g_alpha209fr->SetMarkerColor(4);
 	g_alpha209fr->SetLineColor(4);
 	g_alpha209fr->SetLineWidth(2);
 
-	double eff_210fr = y_Fr(tau_AZ(210,"Fr"),D_m(T,210),depth_Fr(beam_energy,210))*si_eff*des_eff*trans_eff*att_eff*det_eff*dir_prob;
 	double e_210fr = 6.545; // MeV
 	TGraph *g_alpha210fr = new TGraph(g_N210fr->GetN());
 	for (int i=0; i<g_N210fr->GetN(); ++i) {
 		g_alpha210fr->GetX()[i] = g_N210fr->GetX()[i];
-		g_alpha210fr->GetY()[i] = g_N210fr->GetY()[i]*eff_210fr*b_AZ(210,"Fr")/tau_AZ(210,"Fr");
+		g_alpha210fr->GetY()[i] = g_N210fr->GetY()[i]*detection_eff(210,"Fr")/tau_AZ(210,"Fr");
 	}
 	g_alpha210fr->SetTitle(Form("{}^{210}Fr: %g MeV",e_210fr));
 	g_alpha210fr->SetMarkerColor(2);
 	g_alpha210fr->SetLineColor(2);
 	g_alpha210fr->SetLineWidth(2);
 
-	double eff_211fr = y_Fr(tau_AZ(211,"Fr"),D_m(T,211),depth_Fr(beam_energy,211))*si_eff*des_eff*trans_eff*att_eff*det_eff*dir_prob;
 	double e_211fr = 6.537; // MeV
 	TGraph *g_alpha211fr = new TGraph(g_N211fr->GetN());
 	for (int i=0; i<g_N211fr->GetN(); ++i) {
 		g_alpha211fr->GetX()[i] = g_N211fr->GetX()[i];
-		g_alpha211fr->GetY()[i] = g_N211fr->GetY()[i]*eff_211fr*b_AZ(211,"Fr")/tau_AZ(211,"Fr");
+		g_alpha211fr->GetY()[i] = g_N211fr->GetY()[i]*detection_eff(211,"Fr")/tau_AZ(211,"Fr");
 	}
 	g_alpha211fr->SetTitle(Form("{}^{211}Fr: %g MeV",e_211fr));
 	g_alpha211fr->SetMarkerColor(5);
 	g_alpha211fr->SetLineColor(5);
 	g_alpha211fr->SetLineWidth(2);
 
-	double eff_det = att_eff*det_eff*dir_prob;
 	double e_208rn = 6.1401; // MeV
 	TGraph *g_alpha208rn = new TGraph(g_N208rn->GetN());
 	for (int i=0; i<g_N208rn->GetN(); ++i) {
 		g_alpha208rn->GetX()[i] = g_N208rn->GetX()[i];
-		g_alpha208rn->GetY()[i] = g_N208rn->GetY()[i]*eff_det*b_AZ(208,"Rn")/tau_AZ(208,"Rn");
+		g_alpha208rn->GetY()[i] = g_N208rn->GetY()[i]*detection_eff(208,"Rn")/tau_AZ(208,"Rn");
 	}
 	g_alpha208rn->SetTitle(Form("{}^{208}Rn: %g MeV",e_208rn));
 	g_alpha208rn->SetMarkerColor(3);
@@ -833,7 +805,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha209rn = new TGraph(g_N209rn->GetN());
 	for (int i=0; i<g_N209rn->GetN(); ++i) {
 		g_alpha209rn->GetX()[i] = g_N209rn->GetX()[i];
-		g_alpha209rn->GetY()[i] = g_N209rn->GetY()[i]*eff_det*b_AZ(209,"Rn")/tau_AZ(209,"Rn");
+		g_alpha209rn->GetY()[i] = g_N209rn->GetY()[i]*detection_eff(209,"Rn")/tau_AZ(209,"Rn");
 	}
 	g_alpha209rn->SetTitle(Form("{}^{209}Rn: %g MeV",e_209rn));
 	g_alpha209rn->SetMarkerColor(4);
@@ -845,7 +817,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha210rn = new TGraph(g_N210rn->GetN());
 	for (int i=0; i<g_N210rn->GetN(); ++i) {
 		g_alpha210rn->GetX()[i] = g_N210rn->GetX()[i];
-		g_alpha210rn->GetY()[i] = g_N210rn->GetY()[i]*eff_det*b_AZ(210,"Rn")/tau_AZ(210,"Rn");
+		g_alpha210rn->GetY()[i] = g_N210rn->GetY()[i]*detection_eff(210,"Rn")/tau_AZ(210,"Rn");
 	}
 	g_alpha210rn->SetTitle(Form("{}^{210}Rn: %g MeV",e_210rn));
 	g_alpha210rn->SetMarkerColor(2);
@@ -857,7 +829,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha211rn = new TGraph(g_N211rn->GetN());
 	for (int i=0; i<g_N211rn->GetN(); ++i) {
 		g_alpha211rn->GetX()[i] = g_N211rn->GetX()[i];
-		g_alpha211rn->GetY()[i] = g_N211rn->GetY()[i]*eff_det*b_AZ(211,"Rn")/tau_AZ(211,"Rn");
+		g_alpha211rn->GetY()[i] = g_N211rn->GetY()[i]*detection_eff(211,"Rn")/tau_AZ(211,"Rn");
 	}
 	g_alpha211rn->SetTitle(Form("{}^{211}Rn: %g MeV",e_211rn));
 	g_alpha211rn->SetMarkerColor(5);
@@ -869,7 +841,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha204at = new TGraph(g_N204at->GetN());
 	for (int i=0; i<g_N204at->GetN(); ++i) {
 		g_alpha204at->GetX()[i] = g_N204at->GetX()[i];
-		g_alpha204at->GetY()[i] = g_N204at->GetY()[i]*eff_det*b_AZ(204,"At")/tau_AZ(204,"At");
+		g_alpha204at->GetY()[i] = g_N204at->GetY()[i]*detection_eff(204,"At")/tau_AZ(204,"At");
 	}
 	g_alpha204at->SetTitle(Form("{}^{204}At: %g MeV",e_204at));
 	g_alpha204at->SetMarkerColor(3);
@@ -881,7 +853,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha205at = new TGraph(g_N205at->GetN());
 	for (int i=0; i<g_N205at->GetN(); ++i) {
 		g_alpha205at->GetX()[i] = g_N205at->GetX()[i];
-		g_alpha205at->GetY()[i] = g_N205at->GetY()[i]*eff_det*b_AZ(205,"At")/tau_AZ(205,"At");
+		g_alpha205at->GetY()[i] = g_N205at->GetY()[i]*detection_eff(205,"At")/tau_AZ(205,"At");
 	}
 	g_alpha205at->SetTitle(Form("{}^{205}At: %g MeV",e_205at));
 	g_alpha205at->SetMarkerColor(4);
@@ -893,7 +865,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha206at = new TGraph(g_N206at->GetN());
 	for (int i=0; i<g_N206at->GetN(); ++i) {
 		g_alpha206at->GetX()[i] = g_N206at->GetX()[i];
-		g_alpha206at->GetY()[i] = g_N206at->GetY()[i]*eff_det*b_AZ(206,"At")/tau_AZ(206,"At");
+		g_alpha206at->GetY()[i] = g_N206at->GetY()[i]*detection_eff(206,"At")/tau_AZ(206,"At");
 	}
 	g_alpha206at->SetTitle(Form("{}^{206}At: %g MeV",e_206at));
 	g_alpha206at->SetMarkerColor(2);
@@ -905,7 +877,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha207at = new TGraph(g_N207at->GetN());
 	for (int i=0; i<g_N207at->GetN(); ++i) {
 		g_alpha207at->GetX()[i] = g_N207at->GetX()[i];
-		g_alpha207at->GetY()[i] = g_N207at->GetY()[i]*eff_det*b_AZ(207,"At")/tau_AZ(207,"At");
+		g_alpha207at->GetY()[i] = g_N207at->GetY()[i]*detection_eff(207,"At")/tau_AZ(207,"At");
 	}
 	g_alpha207at->SetTitle(Form("{}^{207}At: %g MeV",e_207at));
 	g_alpha207at->SetMarkerColor(5);
@@ -917,7 +889,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha209at = new TGraph(g_N209at->GetN());
 	for (int i=0; i<g_N209at->GetN(); ++i) {
 		g_alpha209at->GetX()[i] = g_N209at->GetX()[i];
-		g_alpha209at->GetY()[i] = g_N209at->GetY()[i]*eff_det*b_AZ(209,"At")/tau_AZ(209,"At");
+		g_alpha209at->GetY()[i] = g_N209at->GetY()[i]*detection_eff(209,"At")/tau_AZ(209,"At");
 	}
 	g_alpha209at->SetTitle(Form("{}^{209}At: %g MeV",e_209at));
 	g_alpha209at->SetMarkerColor(4);
@@ -929,7 +901,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha211at = new TGraph(g_N211at->GetN());
 	for (int i=0; i<g_N211at->GetN(); ++i) {
 		g_alpha211at->GetX()[i] = g_N211at->GetX()[i];
-		g_alpha211at->GetY()[i] = g_N211at->GetY()[i]*eff_det*b_AZ(211,"At")/tau_AZ(211,"At");
+		g_alpha211at->GetY()[i] = g_N211at->GetY()[i]*detection_eff(211,"At")/tau_AZ(211,"At");
 	}
 	g_alpha211at->SetTitle(Form("{}^{211}At: %g MeV",e_211at));
 	g_alpha211at->SetMarkerColor(5);
@@ -941,7 +913,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha206po = new TGraph(g_N206po->GetN());
 	for (int i=0; i<g_N206po->GetN(); ++i) {
 		g_alpha206po->GetX()[i] = g_N206po->GetX()[i];
-		g_alpha206po->GetY()[i] = g_N206po->GetY()[i]*eff_det*b_AZ(206,"Po")/tau_AZ(206,"Po");
+		g_alpha206po->GetY()[i] = g_N206po->GetY()[i]*detection_eff(206,"Po")/tau_AZ(206,"Po");
 	}
 	g_alpha206po->SetTitle(Form("{}^{206}Po: %g MeV",e_206po));
 	g_alpha206po->SetMarkerColor(2);
@@ -953,7 +925,7 @@ int main (int argc, char** argv){
 	TGraph *g_alpha211po = new TGraph(g_N211po->GetN());
 	for (int i=0; i<g_N211po->GetN(); ++i) {
 		g_alpha211po->GetX()[i] = g_N211po->GetX()[i];
-		g_alpha211po->GetY()[i] = g_N211po->GetY()[i]*eff_det*b_AZ(211,"Po")/tau_AZ(211,"Po");
+		g_alpha211po->GetY()[i] = g_N211po->GetY()[i]*detection_eff(211,"Po")/tau_AZ(211,"Po");
 	}
 	g_alpha211po->SetTitle(Form("{}^{211}Po: %g MeV",e_211po));
 	g_alpha211po->SetMarkerColor(5);
@@ -961,7 +933,7 @@ int main (int argc, char** argv){
 	g_alpha211po->SetLineWidth(5);
 	g_alpha211po->SetLineStyle(9);
 
-	TMultiGraph *alpha = new TMultiGraph("alpha","Flux of #alpha Particles Detected at the SSD; Time Elapsed (s); #alpha Particles (/s)");
+	TMultiGraph *alpha = new TMultiGraph("alpha","Flux of #alpha Particles Detected at the SSD; Time Elapsed (s); Detected #alpha Particles Y (/s)");
 	alpha->Add(g_alpha208fr);
 	alpha->Add(g_alpha209fr);
 	alpha->Add(g_alpha210fr);
