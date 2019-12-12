@@ -9,6 +9,25 @@
 #include <TRint.h>
 using namespace std;
 
+// Calculate the primary beam energy after transmitting through the Be window
+double Be_degraded(double E){
+	// Fitted parameters from the dependence_plotter.cpp
+	double C_E0 = -8.76; // MeV
+	double C_E1 = 828.91; // MeV*MeV_incident
+	double C_Be = 0.68; // MeV/um_Be
+	double C_He = 0.0875; // MeV/mm_He
+
+	// Be foil data
+	double T_Be_05 = 9.75; // um; Haba Gr MEF#101147032 #16
+	double T_Be_06 = 9.70; // um; Haba Gr MEF#101147032 #15
+	double T_Be = T_Be_05+T_Be_06; // um; for 11/22 expt
+	double T_He = 4.2 + 17.5 + 6.7; // mm; for 11/22 expt
+
+	double E_loss = C_E0 + (C_E1/(E*18.)) + C_Be*T_Be + C_He*T_He; // MeV
+//	cout << "Degraded energy: " << E*18.-E_loss << " MeV" << endl;
+	return E - (E_loss/18.);
+}
+
 // Function to calculate f_{^AFr} (pps) for each isotope A, given the O beam energy
 // based on the Stancari2006 calculation
 // Includes extraction efficiency calculation
@@ -33,26 +52,23 @@ double calc_flux(int A, double E, double j, double ext_eff){
 
 	if (A==208){
 		TGraph *g208 = new TGraph(10,energy,fr208);
-		TSpline5 *s208 = new TSpline5("Spline Fit for 208",g208);
-		double flux208 = s208->Eval(E) * init_flux;
-		cout << "flux (208Fr): " << flux208 << " pps" << endl;
+		TSpline3 *s208 = new TSpline3("Spline Fit for 208",g208);
+		double flux208 = s208->Eval(Be_degraded(E)) * init_flux;
 		return ext_eff*flux208;
 	}else if (A==209){
 		TGraph *g209 = new TGraph(10,energy,fr209);
 		TSpline3 *s209 = new TSpline3("Spline Fit for 209",g209);
-		double flux209 = s209->Eval(E) * init_flux;
-//		cout << "flux (209Fr): " << flux209 << " pps" << endl;
+		double flux209 = s209->Eval(Be_degraded(E)) * init_flux;
 		return ext_eff*flux209*conv_factor;
 	}else if (A==210){
 		TGraph *g210 = new TGraph(10,energy,fr210);
 		TSpline3 *s210 = new TSpline3("Spline Fit for 210",g210);
-		double flux210 = s210->Eval(E) * init_flux;
-		cout << "flux (210Fr): " << flux210 << " pps" << endl;
+		double flux210 = s210->Eval(Be_degraded(E)) * init_flux;
 		return ext_eff*flux210*conv_factor;
 	}else if (A==211){
 		TGraph *g211 = new TGraph(10,energy,fr211);
 		TSpline3 *s211 = new TSpline3("Spline Fit for 211",g211);
-		double flux211 = s211->Eval(E) * init_flux;
+		double flux211 = s211->Eval(Be_degraded(E)) * init_flux;
 		return ext_eff*flux211;
 	}else{
 		return -9999.;
@@ -566,7 +582,7 @@ int main (int argc, char** argv){
 	double irradiation_time = 15.*minutes;
 	double timelimit = 30.*minutes;
 
-	double beam_energy = 6.94; // MeV/u --> 112 MeV injected to target
+	double beam_energy = 6.94; // MeV/u --> 125 MeV injected to Be window
 
 	// Remaining alpha-emitters at the start
 	double N_208Fr_at_0 = 0.0;
