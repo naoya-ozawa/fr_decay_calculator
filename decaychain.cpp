@@ -6,6 +6,7 @@
 #include <TSpline.h>
 #include <TMath.h>
 #include <TLatex.h>
+#include <TLine.h>
 #include <TRint.h>
 using namespace std;
 
@@ -39,7 +40,6 @@ double calc_flux(int A, double E, double j, double ext_eff){
 	double fr210[10] = {2.2e+04,3.8e+05,1.5e+06,2.9e+06,3.9e+06,4.3e+06,4.4e+06,4.4e+06,4.4e+06,4.4e+06};
 	double fr211[10] = {4.3e+05,8.9e+05,1.1e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06,1.2e+06};
 	for (int i=0; i<10; ++i){
-		energy[i] /= 18.; // for 18O
     fr208[i] /= TMath::Power(10.,12);
     fr209[i] /= TMath::Power(10.,12);
     fr210[i] /= TMath::Power(10.,12);
@@ -53,22 +53,22 @@ double calc_flux(int A, double E, double j, double ext_eff){
 	if (A==208){
 		TGraph *g208 = new TGraph(10,energy,fr208);
 		TSpline3 *s208 = new TSpline3("Spline Fit for 208",g208);
-		double flux208 = s208->Eval(Be_degraded(E)) * init_flux;
+		double flux208 = s208->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux208;
 	}else if (A==209){
 		TGraph *g209 = new TGraph(10,energy,fr209);
 		TSpline3 *s209 = new TSpline3("Spline Fit for 209",g209);
-		double flux209 = s209->Eval(Be_degraded(E)) * init_flux;
-		return ext_eff*flux209*conv_factor;
+		double flux209 = s209->Eval(Be_degraded(E)*18.) * init_flux;
+		return ext_eff*flux209;
 	}else if (A==210){
 		TGraph *g210 = new TGraph(10,energy,fr210);
 		TSpline3 *s210 = new TSpline3("Spline Fit for 210",g210);
-		double flux210 = s210->Eval(Be_degraded(E)) * init_flux;
-		return ext_eff*flux210*conv_factor;
+		double flux210 = s210->Eval(Be_degraded(E)*18.) * init_flux;
+		return ext_eff*flux210;
 	}else if (A==211){
 		TGraph *g211 = new TGraph(10,energy,fr211);
 		TSpline3 *s211 = new TSpline3("Spline Fit for 211",g211);
-		double flux211 = s211->Eval(Be_degraded(E)) * init_flux;
+		double flux211 = s211->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux211;
 	}else{
 		return -9999.;
@@ -217,7 +217,7 @@ double b_AZ(int A, const char* Z){
 
 // N(t) for each species/isotopes
 double FranciumA(double *x,double *par){
-	int A = par[0]; // the species of interest (208/209/210/211)
+	int A = int(par[0]); // the species of interest (208/209/210/211)
 	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
 	double ext_eff = par[3]; // extraction efficiency of AFr
@@ -736,23 +736,58 @@ int main (int argc, char** argv){
 
 
 	TMultiGraph *N = new TMultiGraph("N","Ions at the MCP; Time Elapsed (s); Ions");
-	N->Add(g_N208fr);
+//	N->Add(g_N208fr);
 	N->Add(g_N209fr);
-	N->Add(g_N210fr);
-	N->Add(g_N211fr);
-	N->Add(g_N208rn);
-	N->Add(g_N209rn);
-	N->Add(g_N210rn);
-	N->Add(g_N211rn);
-	N->Add(g_N204at);
-	N->Add(g_N205at);
-	N->Add(g_N206at);
-	N->Add(g_N207at);
-	N->Add(g_N209at);
-	N->Add(g_N211at);
-	N->Add(g_N206po);
-	N->Add(g_N211po);
+//	N->Add(g_N210fr);
+//	N->Add(g_N211fr);
+//	N->Add(g_N208rn);
+//	N->Add(g_N209rn);
+//	N->Add(g_N210rn);
+//	N->Add(g_N211rn);
+//	N->Add(g_N204at);
+//	N->Add(g_N205at);
+//	N->Add(g_N206at);
+//	N->Add(g_N207at);
+//	N->Add(g_N209at);
+//	N->Add(g_N211at);
+//	N->Add(g_N206po);
+//	N->Add(g_N211po);
 	N->Draw("AL");
+
+	cout << "Beam Energy = " << beam_energy*18. << "-->" << Be_degraded(beam_energy)*18. << " MeV, Beam Current = " << beam_current*TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)) << " pps" << endl;
+
+	TLine *limit_208 = new TLine(irradiation_time-120.,calc_flux(208,beam_energy,beam_current,ext_208)*tau_AZ(208,"Fr"),irradiation_time+120.,calc_flux(208,beam_energy,beam_current,ext_208)*tau_AZ(208,"Fr"));
+	limit_208->SetLineColor(3);
+	limit_208->SetLineWidth(2);
+	limit_208->SetLineStyle(2);
+	limit_208->Draw();
+	cout << "f_{208Fr} = " << calc_flux(208,beam_energy,beam_current,ext_208) << " pps --> ";
+	cout << "f*tau(208Fr): " << calc_flux(208,beam_energy,beam_current,ext_208)*tau_AZ(208,"Fr") << " ions" << endl;
+
+	TLine *limit_209 = new TLine(irradiation_time-120.,calc_flux(209,beam_energy,beam_current,ext_209)*tau_AZ(209,"Fr"),irradiation_time-120.,calc_flux(209,beam_energy,beam_current,ext_209)*tau_AZ(209,"Fr"));
+	limit_209->SetLineColor(4);
+	limit_209->SetLineWidth(2);
+	limit_209->SetLineStyle(2);
+	limit_209->Draw();
+	cout << "f_{209Fr} = " << calc_flux(209,beam_energy,beam_current,ext_209) << " pps --> ";
+	cout << "f*tau(209Fr): " << calc_flux(209,beam_energy,beam_current,ext_209)*tau_AZ(209,"Fr") << " ions" << endl;
+
+	TLine *limit_210 = new TLine(irradiation_time-120.,calc_flux(210,beam_energy,beam_current,ext_210)*tau_AZ(210,"Fr"),irradiation_time-120.,calc_flux(210,beam_energy,beam_current,ext_210)*tau_AZ(210,"Fr"));
+	limit_210->SetLineColor(2);
+	limit_210->SetLineWidth(2);
+	limit_210->SetLineStyle(2);
+	limit_210->Draw();
+	cout << "f_{210Fr} = " << calc_flux(210,beam_energy,beam_current,ext_210) << " pps --> ";
+	cout << "f*tau(210Fr): " << calc_flux(210,beam_energy,beam_current,ext_210)*tau_AZ(210,"Fr") << " ions" << endl;
+
+	TLine *limit_211 = new TLine(irradiation_time-120.,calc_flux(211,beam_energy,beam_current,ext_211)*tau_AZ(211,"Fr"),irradiation_time-120.,calc_flux(211,beam_energy,beam_current,ext_211)*tau_AZ(211,"Fr"));
+	limit_211->SetLineColor(5);
+	limit_211->SetLineWidth(2);
+	limit_211->SetLineStyle(2);
+	limit_211->Draw();
+	cout << "f_{211Fr} = " << calc_flux(211,beam_energy,beam_current,ext_211) << " pps --> ";
+	cout << "f*tau(211Fr): " << calc_flux(211,beam_energy,beam_current,ext_211)*tau_AZ(211,"Fr") << " ions" << endl;
+
 
 	c1->cd(1);
 //	ls_ratio->DrawLatex(0.1,0.6,"Escape efficiencies #varepsilon_{escape}:");
@@ -954,18 +989,18 @@ int main (int argc, char** argv){
 	alpha->Add(g_alpha209fr);
 	alpha->Add(g_alpha210fr);
 	alpha->Add(g_alpha211fr);
-	alpha->Add(g_alpha208rn);
-	alpha->Add(g_alpha209rn);
-	alpha->Add(g_alpha210rn);
-	alpha->Add(g_alpha211rn);
-	alpha->Add(g_alpha204at);
-	alpha->Add(g_alpha205at);
-	alpha->Add(g_alpha206at);
-	alpha->Add(g_alpha207at);
-	alpha->Add(g_alpha209at);
-	alpha->Add(g_alpha211at);
-	alpha->Add(g_alpha206po);
-	alpha->Add(g_alpha211po);
+//	alpha->Add(g_alpha208rn);
+//	alpha->Add(g_alpha209rn);
+//	alpha->Add(g_alpha210rn);
+//	alpha->Add(g_alpha211rn);
+//	alpha->Add(g_alpha204at);
+//	alpha->Add(g_alpha205at);
+//	alpha->Add(g_alpha206at);
+//	alpha->Add(g_alpha207at);
+//	alpha->Add(g_alpha209at);
+//	alpha->Add(g_alpha211at);
+//	alpha->Add(g_alpha206po);
+//	alpha->Add(g_alpha211po);
 	alpha->Draw("AL");
 
 	c1->cd(4);
