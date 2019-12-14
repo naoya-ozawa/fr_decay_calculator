@@ -46,28 +46,32 @@ double calc_flux(int A, double E, double j, double ext_eff){
     fr211[i] /= TMath::Power(10.,12);
   }
 
-	double conv_factor = TMath::Power(10.,-9)/6./(1.6*TMath::Power(10.,-19)); // enA --> pps
+	double conv_factor = TMath::Power(10.,-9)/(6.0*1.6*TMath::Power(10.,-19)); // enA --> pps
 	double init_flux = j * conv_factor; // enA --> pps
 //	cout << "Primary beam flux: " << init_flux << endl;
 
 	if (A==208){
 		TGraph *g208 = new TGraph(10,energy,fr208);
 		TSpline3 *s208 = new TSpline3("Spline Fit for 208",g208);
+		//		cout << "P/j(208) = " << s208->Eval(Be_degraded(E)*18.) << endl;
 		double flux208 = s208->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux208;
 	}else if (A==209){
 		TGraph *g209 = new TGraph(10,energy,fr209);
 		TSpline3 *s209 = new TSpline3("Spline Fit for 209",g209);
+//		cout << "P/j(209) = " << s209->Eval(Be_degraded(E)*18.) << endl;
 		double flux209 = s209->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux209;
 	}else if (A==210){
 		TGraph *g210 = new TGraph(10,energy,fr210);
 		TSpline3 *s210 = new TSpline3("Spline Fit for 210",g210);
+//		cout << "P/j(210) = " << s210->Eval(Be_degraded(E)*18.) << endl;
 		double flux210 = s210->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux210;
 	}else if (A==211){
 		TGraph *g211 = new TGraph(10,energy,fr211);
 		TSpline3 *s211 = new TSpline3("Spline Fit for 211",g211);
+//		cout << "P/j(211) = " << s211->Eval(Be_degraded(E)*18.) << endl;
 		double flux211 = s211->Eval(Be_degraded(E)*18.) * init_flux;
 		return ext_eff*flux211;
 	}else{
