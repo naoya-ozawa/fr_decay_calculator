@@ -70,7 +70,10 @@ double tau_AZ(int A, const char* Z){
 			lifetime_err = 0.007 * hours;
 		}
 	}else if (Z == "Po"){
-		if (A == 211){
+		if (A == 206){
+			lifetime = 8.8 * days;
+			lifetime_err = 0.1 * days;
+		}else if (A == 211){
 			lifetime = 0.516 * seconds;
 			lifetime_err = 0.003 * seconds;
 		}
@@ -137,8 +140,11 @@ double b_AZ(int A, const char* Z){
 			b_err = 0.08;
 		}
 	}else if (Z == "Po"){
-		if (A == 211){
-			b = 1.0;
+		if (A == 206){
+			b = 5.45;
+			b = 0.05;
+		}else if (A == 211){
+			b = 100.0;
 			b_err = 0.0;
 		}
 	}
@@ -150,6 +156,52 @@ double b_AZ(int A, const char* Z){
 	return b;
 }
 
+// Dataset for N (t = t_{beamON}) for each species/isotope
+double N_on(int A, const char* Z){
+	double number = -9999.;
+	if (Z == "Fr"){
+		if (A == 208){
+			number = 0.0;
+		}else if (A == 209){
+			number = 0.0;
+		}else if (A == 210){
+			number = 0.0;
+		}else if (A == 211){
+			number = 0.0;
+		}
+	}else if (Z == "Rn"){
+		if (A == 208){
+			number = 0.0;
+		}else if (A == 209){
+			number = 0.0;
+		}else if (A == 210){
+			number = 0.0;
+		}else if (A == 211){
+			number = 0.0;
+		}
+	}else if (Z == "At"){
+		if (A == 204){
+			number = 0.0;
+		}else if (A == 205){
+			number = 0.0;
+		}else if (A == 206){
+			number = 0.0;
+		}else if (A == 207){
+			number = 0.0;
+		}else if (A == 209){
+			number = 0.0;
+		}else if (A == 211){
+			number = 0.0;
+		}
+	}else if (Z == "Po"){
+		if (A == 206){
+			number = 0.0;
+		}else if (A == 211){
+			number = 0.0;
+		}
+	}
+	return number;
+}
 
 // Calculate the primary beam energy (MeV/u) after transmitting through the Be window
 double Be_degraded(double beam_energy){
@@ -667,29 +719,11 @@ int main (int argc, char** argv){
 
 	double beam_energy = 6.94; // MeV/u --> 125 MeV injected to Be window
 
-	// Remaining alpha-emitters at the start
-	double N_208Fr_at_0 = 0.0;
-	double N_209Fr_at_0 = 0.0;
-	double N_210Fr_at_0 = 0.0;
-	double N_211Fr_at_0 = 0.0;
-	double N_208Rn_at_0 = 0.0;
-	double N_209Rn_at_0 = 0.0;
-	double N_210Rn_at_0 = 0.0;
-	double N_211Rn_at_0 = 0.0;
-	double N_204At_at_0 = 0.0;
-	double N_205At_at_0 = 0.0;
-	double N_206At_at_0 = 0.0;
-	double N_207At_at_0 = 0.0;
-	double N_209At_at_0 = 0.0;
-	double N_211At_at_0 = 0.0;
-	double N_206Po_at_0 = 0.0;
-	double N_211Po_at_0 = 0.0;
-
-	// Extraction efficiencies: from the Au target to the MCP
-	double ext_208 = extraction_eff(beam_energy,T,208);
-	double ext_209 = extraction_eff(beam_energy,T,209);
-	double ext_210 = extraction_eff(beam_energy,T,210);
-	double ext_211 = extraction_eff(beam_energy,T,211);
+//	// Extraction efficiencies: from the Au target to the MCP
+//	double ext_208 = extraction_eff(beam_energy,T,208);
+//	double ext_209 = extraction_eff(beam_energy,T,209);
+//	double ext_210 = extraction_eff(beam_energy,T,210);
+//	double ext_211 = extraction_eff(beam_energy,T,211);
 
 	double draw_normprod = normprod(Be_degraded(beam_energy),0);
 
@@ -718,108 +752,108 @@ int main (int argc, char** argv){
 	c1->cd(2);
 
 	TF1 *N_208fr = new TF1("{}^{208}Fr",FranciumA,0.,timelimit,6);
-	N_208fr->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_208Fr_at_0);
+	N_208fr->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"));
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
 
 	TF1 *N_209fr = new TF1("{}^{209}Fr",FranciumA,0.,timelimit,6);
-	N_209fr->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_209Fr_at_0);
+	N_209fr->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"));
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
 
 	TF1 *N_210fr = new TF1("{}^{210}Fr",FranciumA,0.,timelimit,6);
-	N_210fr->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_210Fr_at_0);
+	N_210fr->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"));
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
 
 	TF1 *N_211fr = new TF1("{}^{211}Fr",FranciumA,0.,timelimit,6);
-	N_211fr->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_211Fr_at_0);
+	N_211fr->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"));
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
 
 	TF1 *N_208rn = new TF1("{}^{208}Rn",RadonA,0.,timelimit,7);
-	N_208rn->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_208Fr_at_0,N_208Rn_at_0);
+	N_208rn->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"),N_on(208,"Rn"));
 	TGraph *g_N208rn = new TGraph(N_208rn);
 	g_N208rn->SetMarkerColor(3);
 	g_N208rn->SetLineColor(3);
 	g_N208rn->SetLineStyle(6);
 
 	TF1 *N_209rn = new TF1("{}^{209}Rn",RadonA,0.,timelimit,7);
-	N_209rn->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_209Fr_at_0,N_209Rn_at_0);
+	N_209rn->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(209,"Rn"));
 	TGraph *g_N209rn = new TGraph(N_209rn);
 	g_N209rn->SetMarkerColor(4);
 	g_N209rn->SetLineColor(4);
 	g_N209rn->SetLineStyle(6);
 
 	TF1 *N_210rn = new TF1("{}^{210}Rn",RadonA,0.,timelimit,7);
-	N_210rn->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_210Fr_at_0,N_210Rn_at_0);
+	N_210rn->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(210,"Rn"));
 	TGraph *g_N210rn = new TGraph(N_210rn);
 	g_N210rn->SetMarkerColor(2);
 	g_N210rn->SetLineColor(2);
 	g_N210rn->SetLineStyle(6);
 
 	TF1 *N_211rn = new TF1("{}^{211}Rn",RadonA,0.,timelimit,7);
-	N_211rn->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_211Fr_at_0,N_211Rn_at_0);
+	N_211rn->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"));
 	TGraph *g_N211rn = new TGraph(N_211rn);
 	g_N211rn->SetMarkerColor(5);
 	g_N211rn->SetLineColor(5);
 	g_N211rn->SetLineStyle(6);
 
 	TF1 *N_204at = new TF1("{}^{204}At",AstatineAalpha,0.,timelimit,7);
-	N_204at->SetParameters(204,beam_energy,beam_current,T,irradiation_time,N_208Fr_at_0,N_204At_at_0);
+	N_204at->SetParameters(204,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"),N_on(204,"At"));
 	TGraph *g_N204at = new TGraph(N_204at);
 	g_N204at->SetMarkerColor(3);
 	g_N204at->SetLineColor(3);
 	g_N204at->SetLineStyle(2);
 
 	TF1 *N_205at = new TF1("{}^{205}At",AstatineAalpha,0.,timelimit,7);
-	N_205at->SetParameters(205,beam_energy,beam_current,T,irradiation_time,N_209Fr_at_0,N_205At_at_0);
+	N_205at->SetParameters(205,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(205,"At"));
 	TGraph *g_N205at = new TGraph(N_205at);
 	g_N205at->SetMarkerColor(4);
 	g_N205at->SetLineColor(4);
 	g_N205at->SetLineStyle(2);
 
 	TF1 *N_206at = new TF1("{}^{206}At",AstatineAalpha,0.,timelimit,7);
-	N_206at->SetParameters(206,beam_energy,beam_current,T,irradiation_time,N_210Fr_at_0,N_206At_at_0);
+	N_206at->SetParameters(206,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(206,"At"));
 	TGraph *g_N206at = new TGraph(N_206at);
 	g_N206at->SetMarkerColor(2);
 	g_N206at->SetLineColor(2);
 	g_N206at->SetLineStyle(2);
 
 	TF1 *N_207at = new TF1("{}^{207}At",AstatineAalpha,0.,timelimit,7);
-	N_207at->SetParameters(207,beam_energy,beam_current,T,irradiation_time,N_211Fr_at_0,N_207At_at_0);
+	N_207at->SetParameters(207,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(207,"At"));
 	TGraph *g_N207at = new TGraph(N_207at);
 	g_N207at->SetMarkerColor(5);
 	g_N207at->SetLineColor(5);
 	g_N207at->SetLineStyle(2);
 
 	TF1 *N_209at = new TF1("{}^{209}At",AstatineAbeta,0.,timelimit,8);
-	N_209at->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_209Fr_at_0,N_209Rn_at_0,N_209At_at_0);
+	N_209at->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(209,"Rn"),N_on(209,"At"));
 	TGraph *g_N209at = new TGraph(N_209at);
 	g_N209at->SetMarkerColor(4);
 	g_N209at->SetLineColor(4);
 	g_N209at->SetLineStyle(4);
 
 	TF1 *N_211at = new TF1("{}^{211}At",AstatineAbeta,0.,timelimit,8);
-	N_211at->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0);
+	N_211at->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"));
 	TGraph *g_N211at = new TGraph(N_211at);
 	g_N211at->SetMarkerColor(5);
 	g_N211at->SetLineColor(5);
 	g_N211at->SetLineStyle(4);
 
 	TF1 *N_206po = new TF1("{}^{206}Po",Polonium206,0.,timelimit,8);
-	N_206po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_210Fr_at_0,N_210Rn_at_0,N_206At_at_0,N_206Po_at_0);
+	N_206po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(210,"Rn"),N_on(206,"At"),N_on(206,"Po"));
 	TGraph *g_N206po = new TGraph(N_206po);
 	g_N206po->SetMarkerColor(2);
 	g_N206po->SetLineColor(2);
 	g_N206po->SetLineStyle(9);
 
 	TF1 *N_211po = new TF1("{}^{211}Po",Polonium211,0.,timelimit,8);
-	N_211po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_211Fr_at_0,N_211Rn_at_0,N_211At_at_0,N_211Po_at_0);
+	N_211po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"),N_on(211,"Po"));
 	TGraph *g_N211po = new TGraph(N_211po);
 	g_N211po->SetMarkerColor(5);
 	g_N211po->SetLineColor(5);
@@ -878,6 +912,7 @@ int main (int argc, char** argv){
 //	limit_211->Draw();
 	cout << "f_{211Fr} = " << calc_flux(211,beam_energy,beam_current,T) << " pps --> ";
 	cout << "f*tau(211Fr): " << calc_flux(211,beam_energy,beam_current,T)*tau_AZ(211,"Fr") << " ions" << endl;
+
 
 
 	c1->cd(1);
