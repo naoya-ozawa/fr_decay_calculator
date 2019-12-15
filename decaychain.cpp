@@ -369,7 +369,12 @@ double D_m(double T, int A){
 double range(double peak_energy,double incident_energy){
 	// based on fit of the energy_dependence.cpp in the fr_production_calculator/SRIM_calculations
 	// incident_energy: MeV/u
-	return -2.6 + 0.34 * incident_energy*18. - 0.31 * peak_energy; // um
+	double d = -2.6 + 0.34 * incident_energy*18. - 0.31 * peak_energy; // um
+	if (d < 0.0){
+		return -9999.;
+	}else{
+		return d;
+	}
 }
 
 double depth_Fr(double incident_energy, int isotope){
@@ -417,6 +422,102 @@ double extraction_eff(double incident_energy, double temp, int A){
 	return escape;
 }
 
+double escape_time(double incident_energy, double temp, int A){
+	// based on Fujioka1981
+	double t_ave = depth_Fr(incident_energy,A)*depth_Fr(incident_energy,A)/(3.*D_m(temp,A));
+	if (depth_Fr(incident_energy,A) < 0.0){
+		return 0.0;
+	}else{
+		return t_ave;
+	}
+}
+
+void draw_extraction_eff(double temp){
+	int npts = 50;
+	double emin = 80.; // MeV (primary)
+	double emax = 130.; // MeV (primary)
+	double energy[npts];
+	double eff208[npts];
+	double eff209[npts];
+	double eff210[npts];
+	double eff211[npts];
+	double esc208[npts];
+	double esc209[npts];
+	double esc210[npts];
+	double esc211[npts];
+
+	for (int i=0; i<npts; ++i){
+		energy[i] = emin + double(i)*(emax-emin)/double(npts);
+		eff208[i] = 100.*extraction_eff(Be_degraded(energy[i]/18.),temp,208);
+		eff209[i] = 100.*extraction_eff(Be_degraded(energy[i]/18.),temp,209);
+		eff210[i] = 100.*extraction_eff(Be_degraded(energy[i]/18.),temp,210);
+		eff211[i] = 100.*extraction_eff(Be_degraded(energy[i]/18.),temp,211);
+		esc208[i] = escape_time(Be_degraded(energy[i]/18.),temp,208);
+		esc209[i] = escape_time(Be_degraded(energy[i]/18.),temp,209);
+		esc210[i] = escape_time(Be_degraded(energy[i]/18.),temp,210);
+		esc211[i] = escape_time(Be_degraded(energy[i]/18.),temp,211);
+	}
+
+	TGraph *g_eff208 = new TGraph(npts,energy,eff208);
+	g_eff208->SetTitle("{}^{208}Fr");
+	g_eff208->SetLineColor(3);
+	g_eff208->SetLineWidth(2);
+	TGraph *g_eff209 = new TGraph(npts,energy,eff209);
+	g_eff209->SetTitle("{}^{209}Fr");
+	g_eff209->SetLineColor(4);
+	g_eff209->SetLineWidth(2);
+	TGraph *g_eff210 = new TGraph(npts,energy,eff210);
+	g_eff210->SetTitle("{}^{210}Fr");
+	g_eff210->SetLineColor(2);
+	g_eff210->SetLineWidth(2);
+	TGraph *g_eff211 = new TGraph(npts,energy,eff211);
+	g_eff211->SetTitle("{}^{211}Fr");
+	g_eff211->SetLineColor(5);
+	g_eff211->SetLineWidth(2);
+
+	TMultiGraph *mg_eff = new TMultiGraph();
+	mg_eff->SetTitle(Form("Escape Probability Before Decay at T_{Au} = %3.0f#circC;Primary Beam Energy E_{{}^{18}O} (MeV);Probability #varepsilon_{extraction} = #varepsilon_{transportation} #varepsilon_{desorption} #varepsilon_{ionization} #varepsilon_{escape} (%%)",temp-273.));
+	mg_eff->Add(g_eff208);
+	mg_eff->Add(g_eff209);
+	mg_eff->Add(g_eff210);
+	mg_eff->Add(g_eff211);
+
+	TCanvas *c_extraction_efficiency = new TCanvas();
+	c_extraction_efficiency->Divide(2,1);
+	c_extraction_efficiency->cd(1);
+	mg_eff->Draw("ALP");
+	c_extraction_efficiency->cd(1)->BuildLegend();
+
+	TGraph *g_esc208 = new TGraph(npts,energy,esc208);
+	g_esc208->SetTitle("{}^{208}Fr");
+	g_esc208->SetLineColor(3);
+	g_esc208->SetLineWidth(2);
+	TGraph *g_esc209 = new TGraph(npts,energy,esc209);
+	g_esc209->SetTitle("{}^{209}Fr");
+	g_esc209->SetLineColor(4);
+	g_esc209->SetLineWidth(2);
+	TGraph *g_esc210 = new TGraph(npts,energy,esc210);
+	g_esc210->SetTitle("{}^{210}Fr");
+	g_esc210->SetLineColor(2);
+	g_esc210->SetLineWidth(2);
+	TGraph *g_esc211 = new TGraph(npts,energy,esc211);
+	g_esc211->SetTitle("{}^{211}Fr");
+	g_esc211->SetLineColor(5);
+	g_esc211->SetLineWidth(2);
+
+	TMultiGraph *mg_esc = new TMultiGraph();
+	mg_esc->SetTitle(Form("Average Escape Time at T_{Au} = %3.0f#circC;Primary Beam Energy E_{{}^{18}O} (MeV);Escape Time #left<t#right> = #frac{d^{2}}{3D} (s)",temp-273.));
+	mg_esc->Add(g_esc208);
+	mg_esc->Add(g_esc209);
+	mg_esc->Add(g_esc210);
+	mg_esc->Add(g_esc211);
+
+	c_extraction_efficiency->cd(2);
+	mg_esc->Draw("ALP");
+	c_extraction_efficiency->cd(2)->BuildLegend();
+
+	return;
+}
 
 // Function to calculate f_{^AFr} (pps) for each isotope A, given the O beam energy
 // based on the Stancari2006 normalized flux
@@ -735,6 +836,7 @@ int main (int argc, char** argv){
 //	double ext_211 = extraction_eff(beam_energy,T,211);
 
 	double draw_normprod = normprod(Be_degraded(beam_energy),0);
+	draw_extraction_eff(T);
 
 	TCanvas *c1 = new TCanvas();
 	c1->Divide(2,2);
