@@ -444,8 +444,9 @@ double FranciumA(double *x,double *par){
 	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
 	double T = par[3]; // temperature of Au (K)
-	double irrad_time = par[4]; // beam irradiation time (from start) t_0
-	double n_init = par[5]; // initial number N_AFr(t=0)
+	double tON = par[4]; // beam ON time (from start) t_on
+	double tOFF = par[5]; // beam OFF time (from start) t_off
+	double n_init = par[6]; // initial number N_AFr(t=0)
 	double t = x[0]; // seconds
 
 	double f_AFr = calc_flux(A,E,j,T); // Fr transported (pps) to the MCP
@@ -454,12 +455,12 @@ double FranciumA(double *x,double *par){
 	double tildeQ_A = f_AFr * tau_AFr;
 	double tildeQ_AFr = n_init - tildeQ_A;
 
-	if (t < irrad_time){
-		return tildeQ_A + tildeQ_AFr * TMath::Exp(-t/tau_AFr);
+	if (t < tOFF){
+		return tildeQ_A + tildeQ_AFr * TMath::Exp(-(t-tON)/tau_AFr);
 	}else{
-		double n_beamoff = tildeQ_A + tildeQ_AFr*TMath::Exp(-irrad_time/tau_AFr);
+		double n_beamoff = tildeQ_A + tildeQ_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr);
 		double hatQ_AFr = n_beamoff;
-		return hatQ_AFr * TMath::Exp(-(t-irrad_time)/tau_AFr);
+		return hatQ_AFr * TMath::Exp(-(t-tOFF)/tau_AFr);
 	}
 }
 
@@ -468,9 +469,10 @@ double AstatineAalpha(double *x,double *par){
 	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
 	double T = par[3]; // temperature of Au (K)
-	double irrad_time = par[4]; // beam irradiation time (from start) t_0
-	double n_init = par[5]; // initial number N_AFr(t=0)
-	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
+	double tON = par[4]; // beam ON time (from start) t_on
+	double tOFF = par[5]; // beam OFF time (from start) t_off
+	double n_init = par[6]; // initial number N_AFr(t=0)
+	double n_init_at = par[7]; // initial number of At N_AAt(t=0)
 	double t = x[0]; // seconds
 
 	double f_Ap4Fr = calc_flux(A+4,E,j,T); // Fr transported (pps) to the MCP
@@ -485,14 +487,14 @@ double AstatineAalpha(double *x,double *par){
 	double tildeP_Ap4Fr = b_Ap4Fr*tildeQ_Ap4Fr*(Dt_AtFr/tau_Ap4Fr);
 	double tildeP_AAt = n_init_at - tildeP_A - tildeP_Ap4Fr;
 
-	if (t < irrad_time){
-		return tildeP_A + tildeP_Ap4Fr*TMath::Exp(-t/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-t/tau_AAt);
+	if (t < tOFF){
+		return tildeP_A + tildeP_Ap4Fr*TMath::Exp(-(t-tON)/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-(t-tON)/tau_AAt);
 	}else{
-		double n_beamoff = tildeP_A + tildeP_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-irrad_time/tau_AAt);
-		double hatQ_Ap4Fr = tildeQ_Ap4 + tildeQ_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr);
+		double n_beamoff = tildeP_A + tildeP_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt);
+		double hatQ_Ap4Fr = tildeQ_Ap4 + tildeQ_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr);
 		double hatP_Ap4Fr = b_Ap4Fr*hatQ_Ap4Fr*(Dt_AtFr/tau_Ap4Fr);
 		double hatP_AAt = n_beamoff - hatP_Ap4Fr;
-		return hatP_Ap4Fr*TMath::Exp(-(t-irrad_time)/tau_Ap4Fr) + hatP_AAt*TMath::Exp(-(t-irrad_time)/tau_AAt);
+		return hatP_Ap4Fr*TMath::Exp(-(t-tOFF)/tau_Ap4Fr) + hatP_AAt*TMath::Exp(-(t-tOFF)/tau_AAt);
 	}
 }
 
@@ -501,9 +503,10 @@ double RadonA(double *x, double *par){
 	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
 	double T = par[3]; // temperature of Au (K)
-	double irrad_time = par[4]; // beam irradiation time (from start) t_0
-	double n_init = par[5]; // initial number N_AFr(t=0)
-	double n_init_rn = par[6]; // initial number N_ARn(t=0)
+	double tON = par[4]; // beam ON time (from start) t_on
+	double tOFF = par[5]; // beam OFF time (from start) t_off
+	double n_init = par[6]; // initial number N_AFr(t=0)
+	double n_init_rn = par[7]; // initial number N_ARn(t=0)
 	double t = x[0]; // seconds
 
 	double f_AFr = calc_flux(A,E,j,T); // Fr transported (pps) to the MCP
@@ -518,14 +521,14 @@ double RadonA(double *x, double *par){
 	double tildeN_AFr = (1.-b_AFr)*tildeQ_AFr*(Dt_RnFr/tau_AFr);
 	double tildeN_ARn = n_init_rn - tildeN_A - tildeN_AFr;
 
-	if (t < irrad_time){
-		return tildeN_A + tildeN_AFr*TMath::Exp(-t/tau_AFr) + tildeN_ARn*TMath::Exp(-t/tau_ARn);
+	if (t < tOFF){
+		return tildeN_A + tildeN_AFr*TMath::Exp(-(t-tON)/tau_AFr) + tildeN_ARn*TMath::Exp(-(t-tON)/tau_ARn);
 	}else{
-		double n_beamoff = tildeN_A + tildeN_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeN_ARn*TMath::Exp(-irrad_time/tau_ARn);
-		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-irrad_time/tau_AFr);
+		double n_beamoff = tildeN_A + tildeN_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeN_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn);
+		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr);
 		double hatN_AFr = (1.-b_AFr)*hatQ_AFr*(Dt_RnFr/tau_AFr);
 		double hatN_ARn = n_beamoff - hatN_AFr;
-		return hatN_AFr*TMath::Exp(-(t-irrad_time)/tau_AFr) + hatN_ARn*TMath::Exp(-(t-irrad_time)/tau_ARn);
+		return hatN_AFr*TMath::Exp(-(t-tOFF)/tau_AFr) + hatN_ARn*TMath::Exp(-(t-tOFF)/tau_ARn);
 	}
 }
 
@@ -534,10 +537,11 @@ double AstatineAbeta(double *x, double *par){
 	double E = par[1]; // the primary beam energy (MeV/u)
 	double j = par[2]; // the primary beam current (enA)
 	double T = par[3]; // temperature of Au (K)
-	double irrad_time = par[4]; // beam irradiation time (from start) t_0
-	double n_init = par[5]; // initial number N_AFr(t=0)
-	double n_init_rn = par[6]; // initial number of Rn N_ARn(t=0)
-	double n_init_at = par[7]; // initial number of At N_AAt(t=0)
+	double tON = par[4]; // beam ON time (from start) t_on
+	double tOFF = par[5]; // beam OFF time (from start) t_off
+	double n_init = par[6]; // initial number N_AFr(t=0)
+	double n_init_rn = par[7]; // initial number of Rn N_ARn(t=0)
+	double n_init_at = par[8]; // initial number of At N_AAt(t=0)
 	double t = x[0]; // seconds
 
 	double f_AFr = calc_flux(A,E,j,T); // Fr transported (pps) to the MCP
@@ -560,17 +564,17 @@ double AstatineAbeta(double *x, double *par){
 	double tildeM_ARn = (1.-b_ARn)*tildeN_ARn*(Dt_AtRn/tau_ARn);
 	double tildeM_AAt = n_init_at - tildeM_A - tildeM_AFr - tildeM_ARn;
 
-	if (t < irrad_time){
-		return tildeM_A + tildeM_AFr*TMath::Exp(-t/tau_AFr) + tildeM_ARn*TMath::Exp(-t/tau_ARn) + tildeM_AAt*TMath::Exp(-t/tau_AAt);
+	if (t < tOFF){
+		return tildeM_A + tildeM_AFr*TMath::Exp(-(t-tON)/tau_AFr) + tildeM_ARn*TMath::Exp(-(t-tON)/tau_ARn) + tildeM_AAt*TMath::Exp(-(t-tON)/tau_AAt);
 	}else{
-		double n_beamoff = tildeM_A + tildeM_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeM_ARn*TMath::Exp(-irrad_time/tau_ARn) + tildeM_AAt*TMath::Exp(-irrad_time/tau_AAt);
-		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-irrad_time/tau_AFr);
+		double n_beamoff = tildeM_A + tildeM_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeM_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn) + tildeM_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt);
+		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr);
 		double hatN_AFr = (1.-b_AFr)*hatQ_AFr*(Dt_RnFr/tau_AFr);
-		double hatN_ARn = tildeN_A + tildeN_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeN_ARn*TMath::Exp(-irrad_time/tau_ARn) - hatN_AFr;
+		double hatN_ARn = tildeN_A + tildeN_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeN_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn) - hatN_AFr;
 		double hatM_AFr = (1.-b_ARn)*hatN_AFr*(Dt_AtFr/tau_ARn);
 		double hatM_ARn = (1.-b_ARn)*hatN_ARn*(Dt_AtRn/tau_ARn);
 		double hatM_AAt = n_beamoff - hatM_AFr - hatM_ARn;
-		return hatM_AFr*TMath::Exp(-(t-irrad_time)/tau_AFr) + hatM_ARn*TMath::Exp(-(t-irrad_time)/tau_ARn) + hatM_AAt*TMath::Exp(-(t-irrad_time)/tau_AAt);
+		return hatM_AFr*TMath::Exp(-(t-tOFF)/tau_AFr) + hatM_ARn*TMath::Exp(-(t-tOFF)/tau_ARn) + hatM_AAt*TMath::Exp(-(t-tOFF)/tau_AAt);
 	}
 }
 
@@ -579,11 +583,12 @@ double Polonium206(double *x, double *par){
 	double E = par[0]; // the primary beam energy (MeV/u)
 	double j = par[1]; // the primary beam current (enA)
 	double T = par[2]; // temperature of Au (K)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_A+4Fr(t=0)
-	double n_init_rn = par[5]; // initial number of Rn N_A+4Rn(t=0)
-	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
-	double n_init_po = par[7]; // initial number of At N_APo(t=0)
+	double tON = par[3]; // beam ON time (from start) t_on
+	double tOFF = par[4]; // beam OFF time (from start) t_off
+	double n_init = par[5]; // initial number N_A+4Fr(t=0)
+	double n_init_rn = par[6]; // initial number of Rn N_A+4Rn(t=0)
+	double n_init_at = par[7]; // initial number of At N_AAt(t=0)
+	double n_init_po = par[8]; // initial number of At N_APo(t=0)
 	double t = x[0]; // seconds
 
 	double f_Ap4Fr = calc_flux(A+4,E,j,T); // Fr transported (pps) to the MCP
@@ -615,20 +620,20 @@ double Polonium206(double *x, double *par){
 	double tildeL_AAt = (1.-b_AAt)*tildeP_AAt*(Dt_PoAt/tau_AAt);
 	double tildeL_APo = n_init_po - tildeL_A - tildeL_Ap4Fr - tildeL_Ap4Rn - tildeL_AAt;
 
-	if (t < irrad_time){
-		return tildeL_A + tildeL_Ap4Fr*TMath::Exp(-t/tau_Ap4Fr) + tildeL_Ap4Rn*TMath::Exp(-t/tau_Ap4Rn) + tildeL_AAt*TMath::Exp(-t/tau_AAt) + tildeL_APo*TMath::Exp(-t/tau_APo);
+	if (t < tOFF){
+		return tildeL_A + tildeL_Ap4Fr*TMath::Exp(-(t-tON)/tau_Ap4Fr) + tildeL_Ap4Rn*TMath::Exp(-(t-tON)/tau_Ap4Rn) + tildeL_AAt*TMath::Exp(-(t-tON)/tau_AAt) + tildeL_APo*TMath::Exp(-(t-tON)/tau_APo);
 	}else{
-		double n_beamoff = tildeL_A + tildeL_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr) + tildeL_Ap4Rn*TMath::Exp(-irrad_time/tau_Ap4Rn) + tildeL_AAt*TMath::Exp(-irrad_time/tau_AAt) + tildeL_APo*TMath::Exp(-irrad_time/tau_APo);
-		double hatQ_Ap4Fr = tildeQ_Ap4 + tildeQ_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr);
+		double n_beamoff = tildeL_A + tildeL_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr) + tildeL_Ap4Rn*TMath::Exp(-(tOFF-tON)/tau_Ap4Rn) + tildeL_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt) + tildeL_APo*TMath::Exp(-(tOFF-tON)/tau_APo);
+		double hatQ_Ap4Fr = tildeQ_Ap4 + tildeQ_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr);
 		double hatP_Ap4Fr = b_Ap4Fr*hatQ_Ap4Fr*(Dt_AtFr/tau_Ap4Fr);
-		double hatP_AAt = tildeP_A + tildeP_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-irrad_time/tau_AAt) - hatP_Ap4Fr;
+		double hatP_AAt = tildeP_A + tildeP_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr) + tildeP_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt) - hatP_Ap4Fr;
 		double hatN_Ap4Fr = (1.-b_Ap4Fr)*hatQ_Ap4Fr*(Dt_RnFr/tau_Ap4Fr);
-		double hatN_Ap4Rn = tildeN_Ap4 + tildeN_Ap4Fr*TMath::Exp(-irrad_time/tau_Ap4Fr) + tildeN_Ap4Rn*TMath::Exp(-irrad_time/tau_Ap4Rn) - hatN_Ap4Fr;
+		double hatN_Ap4Rn = tildeN_Ap4 + tildeN_Ap4Fr*TMath::Exp(-(tOFF-tON)/tau_Ap4Fr) + tildeN_Ap4Rn*TMath::Exp(-(tOFF-tON)/tau_Ap4Rn) - hatN_Ap4Fr;
 		double hatL_Ap4Fr = b_Ap4Rn*hatN_Ap4Fr*(Dt_PoFr/tau_Ap4Rn) + (1.-b_AAt)*hatP_Ap4Fr*(Dt_PoFr/tau_AAt);
 		double hatL_Ap4Rn = b_Ap4Rn*hatN_Ap4Rn*(Dt_PoRn/tau_AAt);
 		double hatL_AAt = (1.-b_AAt)*hatP_AAt*(Dt_PoAt/tau_AAt);
 		double hatL_APo = n_beamoff - hatL_Ap4Fr - hatL_Ap4Rn - hatL_AAt;
-		return hatL_Ap4Fr*TMath::Exp(-(t-irrad_time)/tau_Ap4Fr) + hatL_Ap4Rn*TMath::Exp(-(t-irrad_time)/tau_Ap4Rn) + hatL_AAt*TMath::Exp(-(t-irrad_time)/tau_AAt) + hatL_APo*TMath::Exp(-(t-irrad_time)/tau_APo);
+		return hatL_Ap4Fr*TMath::Exp(-(t-tOFF)/tau_Ap4Fr) + hatL_Ap4Rn*TMath::Exp(-(t-tOFF)/tau_Ap4Rn) + hatL_AAt*TMath::Exp(-(t-tOFF)/tau_AAt) + hatL_APo*TMath::Exp(-(t-tOFF)/tau_APo);
 	}
 }
 
@@ -637,11 +642,12 @@ double Polonium211(double *x, double *par){
 	double E = par[0]; // the primary beam energy (MeV/u)
 	double j = par[1]; // the primary beam current (enA)
 	double T = par[2]; // temperature of Au (K)
-	double irrad_time = par[3]; // beam irradiation time (from start) t_0
-	double n_init = par[4]; // initial number N_AFr(t=0)
-	double n_init_rn = par[5]; // initial number of Rn N_ARn(t=0)
-	double n_init_at = par[6]; // initial number of At N_AAt(t=0)
-	double n_init_po = par[7]; // initial number of Po N_APo(t=0)
+	double tON = par[3]; // beam ON time (from start) t_on
+	double tOFF = par[4]; // beam OFF time (from start) t_off
+	double n_init = par[5]; // initial number N_AFr(t=0)
+	double n_init_rn = par[6]; // initial number of Rn N_ARn(t=0)
+	double n_init_at = par[7]; // initial number of At N_AAt(t=0)
+	double n_init_po = par[8]; // initial number of Po N_APo(t=0)
 	double t = x[0]; // seconds
 
 	double f_AFr = calc_flux(A,E,j,T); // Fr transported (pps) to the MCP
@@ -674,21 +680,21 @@ double Polonium211(double *x, double *par){
 	double tildeK_AAt = (1.-b_AAt)*tildeM_AAt*(Dt_PoAt/tau_AAt);
 	double tildeK_APo = n_init_po - tildeK_A - tildeK_AFr - tildeK_ARn - tildeK_AAt;
 
-	if (t < irrad_time){
-		return tildeK_A + tildeK_AFr*TMath::Exp(-t/tau_AFr) + tildeK_ARn*TMath::Exp(-t/tau_ARn) + tildeK_AAt*TMath::Exp(-t/tau_AAt) + tildeK_APo*TMath::Exp(-t/tau_APo);
+	if (t < tOFF){
+		return tildeK_A + tildeK_AFr*TMath::Exp(-(t-tON)/tau_AFr) + tildeK_ARn*TMath::Exp(-(t-tON)/tau_ARn) + tildeK_AAt*TMath::Exp(-(t-tON)/tau_AAt) + tildeK_APo*TMath::Exp(-(t-tON)/tau_APo);
 	}else{
-		double n_beamoff = tildeK_A + tildeK_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeK_ARn*TMath::Exp(-irrad_time/tau_ARn) + tildeK_AAt*TMath::Exp(-irrad_time/tau_AAt) + tildeK_APo*TMath::Exp(-irrad_time/tau_APo);
-		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-irrad_time/tau_AFr);
+		double n_beamoff = tildeK_A + tildeK_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeK_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn) + tildeK_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt) + tildeK_APo*TMath::Exp(-(tOFF-tON)/tau_APo);
+		double hatQ_AFr = tildeQ_A + tildeQ_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr);
 		double hatN_AFr = (1.-b_AFr)*hatQ_AFr*(Dt_RnFr/tau_AFr);
-		double hatN_ARn = tildeN_A + tildeN_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeN_ARn*TMath::Exp(-irrad_time/tau_ARn) - hatN_AFr;
+		double hatN_ARn = tildeN_A + tildeN_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeN_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn) - hatN_AFr;
 		double hatM_AFr = (1.-b_ARn)*hatN_AFr*(Dt_AtFr/tau_ARn);
 		double hatM_ARn = (1.-b_ARn)*hatN_ARn*(Dt_AtRn/tau_ARn);
-		double hatM_AAt = tildeM_A + tildeM_AFr*TMath::Exp(-irrad_time/tau_AFr) + tildeM_ARn*TMath::Exp(-irrad_time/tau_ARn) + tildeM_AAt*TMath::Exp(-irrad_time/tau_AAt) - hatM_AFr - hatM_ARn;
+		double hatM_AAt = tildeM_A + tildeM_AFr*TMath::Exp(-(tOFF-tON)/tau_AFr) + tildeM_ARn*TMath::Exp(-(tOFF-tON)/tau_ARn) + tildeM_AAt*TMath::Exp(-(tOFF-tON)/tau_AAt) - hatM_AFr - hatM_ARn;
 		double hatK_AFr = (1.-b_AAt)*hatM_AFr*(Dt_PoFr/tau_AAt);
 		double hatK_ARn = (1.-b_AAt)*hatM_ARn*(Dt_PoRn/tau_AAt);
 		double hatK_AAt = (1.-b_AAt)*hatM_AAt*(Dt_PoAt/tau_AAt);
 		double hatK_APo = n_beamoff - hatK_AFr - hatK_ARn - hatK_AAt;
-		return hatK_AFr*TMath::Exp(-(t-irrad_time)/tau_AFr) + hatK_ARn*TMath::Exp(-(t-irrad_time)/tau_ARn) + hatK_AAt*TMath::Exp(-(t-irrad_time)/tau_AAt) + hatK_APo*TMath::Exp(-(t-irrad_time)/tau_APo);
+		return hatK_AFr*TMath::Exp(-(t-tOFF)/tau_AFr) + hatK_ARn*TMath::Exp(-(t-tOFF)/tau_ARn) + hatK_AAt*TMath::Exp(-(t-tOFF)/tau_AAt) + hatK_APo*TMath::Exp(-(t-tOFF)/tau_APo);
 	}
 }
 
@@ -714,8 +720,11 @@ int main (int argc, char** argv){
 	double beam_current = 4000.; // enA of 18-O-6+
 	double primaryFlux = beam_current*TMath::Power(10.,-9)/(6.*1.6*TMath::Power(10.,-19)); // Particles per second: for 18-O
 	double T = 900. + 273.; // K
+
+	double t_on = 30.0*seconds;
 	double irradiation_time = 15.*minutes;
-	double timelimit = 1.*hours;
+	double t_off = t_on+irradiation_time;
+	double timelimit = 20.*minutes;
 
 	double beam_energy = 6.94; // MeV/u --> 125 MeV injected to Be window
 
@@ -751,109 +760,109 @@ int main (int argc, char** argv){
 
 	c1->cd(2);
 
-	TF1 *N_208fr = new TF1("{}^{208}Fr",FranciumA,0.,timelimit,6);
-	N_208fr->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"));
+	TF1 *N_208fr = new TF1("{}^{208}Fr",FranciumA,t_on,timelimit,7);
+	N_208fr->SetParameters(208,beam_energy,beam_current,T,t_on,t_off,N_on(208,"Fr"));
 	TGraph *g_N208fr = new TGraph(N_208fr);
 	g_N208fr->SetMarkerColor(3);
 	g_N208fr->SetLineColor(3);
 
-	TF1 *N_209fr = new TF1("{}^{209}Fr",FranciumA,0.,timelimit,6);
-	N_209fr->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"));
+	TF1 *N_209fr = new TF1("{}^{209}Fr",FranciumA,t_on,timelimit,7);
+	N_209fr->SetParameters(209,beam_energy,beam_current,T,t_on,t_off,N_on(209,"Fr"));
 	TGraph *g_N209fr = new TGraph(N_209fr);
 	g_N209fr->SetMarkerColor(4);
 	g_N209fr->SetLineColor(4);
 
-	TF1 *N_210fr = new TF1("{}^{210}Fr",FranciumA,0.,timelimit,6);
-	N_210fr->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"));
+	TF1 *N_210fr = new TF1("{}^{210}Fr",FranciumA,t_on,timelimit,7);
+	N_210fr->SetParameters(210,beam_energy,beam_current,T,t_on,t_off,N_on(210,"Fr"));
 	TGraph *g_N210fr = new TGraph(N_210fr);
 	g_N210fr->SetMarkerColor(2);
 	g_N210fr->SetLineColor(2);
 
-	TF1 *N_211fr = new TF1("{}^{211}Fr",FranciumA,0.,timelimit,6);
-	N_211fr->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"));
+	TF1 *N_211fr = new TF1("{}^{211}Fr",FranciumA,t_on,timelimit,7);
+	N_211fr->SetParameters(211,beam_energy,beam_current,T,t_on,t_off,N_on(211,"Fr"));
 	TGraph *g_N211fr = new TGraph(N_211fr);
 	g_N211fr->SetMarkerColor(5);
 	g_N211fr->SetLineColor(5);
 
-	TF1 *N_208rn = new TF1("{}^{208}Rn",RadonA,0.,timelimit,7);
-	N_208rn->SetParameters(208,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"),N_on(208,"Rn"));
+	TF1 *N_208rn = new TF1("{}^{208}Rn",RadonA,t_on,timelimit,8);
+	N_208rn->SetParameters(208,beam_energy,beam_current,T,t_on,t_off,N_on(208,"Fr"),N_on(208,"Rn"));
 	TGraph *g_N208rn = new TGraph(N_208rn);
 	g_N208rn->SetMarkerColor(3);
 	g_N208rn->SetLineColor(3);
 	g_N208rn->SetLineStyle(6);
 
-	TF1 *N_209rn = new TF1("{}^{209}Rn",RadonA,0.,timelimit,7);
-	N_209rn->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(209,"Rn"));
+	TF1 *N_209rn = new TF1("{}^{209}Rn",RadonA,t_on,timelimit,8);
+	N_209rn->SetParameters(209,beam_energy,beam_current,T,t_on,t_off,N_on(209,"Fr"),N_on(209,"Rn"));
 	TGraph *g_N209rn = new TGraph(N_209rn);
 	g_N209rn->SetMarkerColor(4);
 	g_N209rn->SetLineColor(4);
 	g_N209rn->SetLineStyle(6);
 
-	TF1 *N_210rn = new TF1("{}^{210}Rn",RadonA,0.,timelimit,7);
-	N_210rn->SetParameters(210,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(210,"Rn"));
+	TF1 *N_210rn = new TF1("{}^{210}Rn",RadonA,t_on,timelimit,8);
+	N_210rn->SetParameters(210,beam_energy,beam_current,T,t_on,t_off,N_on(210,"Fr"),N_on(210,"Rn"));
 	TGraph *g_N210rn = new TGraph(N_210rn);
 	g_N210rn->SetMarkerColor(2);
 	g_N210rn->SetLineColor(2);
 	g_N210rn->SetLineStyle(6);
 
-	TF1 *N_211rn = new TF1("{}^{211}Rn",RadonA,0.,timelimit,7);
-	N_211rn->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"));
+	TF1 *N_211rn = new TF1("{}^{211}Rn",RadonA,t_on,timelimit,8);
+	N_211rn->SetParameters(211,beam_energy,beam_current,T,t_on,t_off,N_on(211,"Fr"),N_on(211,"Rn"));
 	TGraph *g_N211rn = new TGraph(N_211rn);
 	g_N211rn->SetMarkerColor(5);
 	g_N211rn->SetLineColor(5);
 	g_N211rn->SetLineStyle(6);
 
-	TF1 *N_204at = new TF1("{}^{204}At",AstatineAalpha,0.,timelimit,7);
-	N_204at->SetParameters(204,beam_energy,beam_current,T,irradiation_time,N_on(208,"Fr"),N_on(204,"At"));
+	TF1 *N_204at = new TF1("{}^{204}At",AstatineAalpha,t_on,timelimit,8);
+	N_204at->SetParameters(204,beam_energy,beam_current,T,t_on,t_off,N_on(208,"Fr"),N_on(204,"At"));
 	TGraph *g_N204at = new TGraph(N_204at);
 	g_N204at->SetMarkerColor(3);
 	g_N204at->SetLineColor(3);
 	g_N204at->SetLineStyle(2);
 
-	TF1 *N_205at = new TF1("{}^{205}At",AstatineAalpha,0.,timelimit,7);
-	N_205at->SetParameters(205,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(205,"At"));
+	TF1 *N_205at = new TF1("{}^{205}At",AstatineAalpha,t_on,timelimit,8);
+	N_205at->SetParameters(205,beam_energy,beam_current,T,t_on,t_off,N_on(209,"Fr"),N_on(205,"At"));
 	TGraph *g_N205at = new TGraph(N_205at);
 	g_N205at->SetMarkerColor(4);
 	g_N205at->SetLineColor(4);
 	g_N205at->SetLineStyle(2);
 
-	TF1 *N_206at = new TF1("{}^{206}At",AstatineAalpha,0.,timelimit,7);
-	N_206at->SetParameters(206,beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(206,"At"));
+	TF1 *N_206at = new TF1("{}^{206}At",AstatineAalpha,t_on,timelimit,8);
+	N_206at->SetParameters(206,beam_energy,beam_current,T,t_on,t_off,N_on(210,"Fr"),N_on(206,"At"));
 	TGraph *g_N206at = new TGraph(N_206at);
 	g_N206at->SetMarkerColor(2);
 	g_N206at->SetLineColor(2);
 	g_N206at->SetLineStyle(2);
 
-	TF1 *N_207at = new TF1("{}^{207}At",AstatineAalpha,0.,timelimit,7);
-	N_207at->SetParameters(207,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(207,"At"));
+	TF1 *N_207at = new TF1("{}^{207}At",AstatineAalpha,t_on,timelimit,8);
+	N_207at->SetParameters(207,beam_energy,beam_current,T,t_on,t_off,N_on(211,"Fr"),N_on(207,"At"));
 	TGraph *g_N207at = new TGraph(N_207at);
 	g_N207at->SetMarkerColor(5);
 	g_N207at->SetLineColor(5);
 	g_N207at->SetLineStyle(2);
 
-	TF1 *N_209at = new TF1("{}^{209}At",AstatineAbeta,0.,timelimit,8);
-	N_209at->SetParameters(209,beam_energy,beam_current,T,irradiation_time,N_on(209,"Fr"),N_on(209,"Rn"),N_on(209,"At"));
+	TF1 *N_209at = new TF1("{}^{209}At",AstatineAbeta,t_on,timelimit,9);
+	N_209at->SetParameters(209,beam_energy,beam_current,T,t_on,t_off,N_on(209,"Fr"),N_on(209,"Rn"),N_on(209,"At"));
 	TGraph *g_N209at = new TGraph(N_209at);
 	g_N209at->SetMarkerColor(4);
 	g_N209at->SetLineColor(4);
 	g_N209at->SetLineStyle(4);
 
-	TF1 *N_211at = new TF1("{}^{211}At",AstatineAbeta,0.,timelimit,8);
-	N_211at->SetParameters(211,beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"));
+	TF1 *N_211at = new TF1("{}^{211}At",AstatineAbeta,t_on,timelimit,9);
+	N_211at->SetParameters(211,beam_energy,beam_current,T,t_on,t_off,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"));
 	TGraph *g_N211at = new TGraph(N_211at);
 	g_N211at->SetMarkerColor(5);
 	g_N211at->SetLineColor(5);
 	g_N211at->SetLineStyle(4);
 
-	TF1 *N_206po = new TF1("{}^{206}Po",Polonium206,0.,timelimit,8);
-	N_206po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_on(210,"Fr"),N_on(210,"Rn"),N_on(206,"At"),N_on(206,"Po"));
+	TF1 *N_206po = new TF1("{}^{206}Po",Polonium206,t_on,timelimit,9);
+	N_206po->SetParameters(beam_energy,beam_current,T,t_on,t_off,N_on(210,"Fr"),N_on(210,"Rn"),N_on(206,"At"),N_on(206,"Po"));
 	TGraph *g_N206po = new TGraph(N_206po);
 	g_N206po->SetMarkerColor(2);
 	g_N206po->SetLineColor(2);
 	g_N206po->SetLineStyle(9);
 
-	TF1 *N_211po = new TF1("{}^{211}Po",Polonium211,0.,timelimit,8);
-	N_211po->SetParameters(beam_energy,beam_current,T,irradiation_time,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"),N_on(211,"Po"));
+	TF1 *N_211po = new TF1("{}^{211}Po",Polonium211,t_on,timelimit,9);
+	N_211po->SetParameters(beam_energy,beam_current,T,t_on,t_off,N_on(211,"Fr"),N_on(211,"Rn"),N_on(211,"At"),N_on(211,"Po"));
 	TGraph *g_N211po = new TGraph(N_211po);
 	g_N211po->SetMarkerColor(5);
 	g_N211po->SetLineColor(5);
@@ -1132,10 +1141,10 @@ int main (int argc, char** argv){
 	c1->cd(4);
 
 //	double flux_net = flux_208fr+flux_209fr+flux_210fr+flux_211fr;
-	double alpharate_208fr = g_alpha208fr->Eval(irradiation_time);
-	double alpharate_209fr = g_alpha209fr->Eval(irradiation_time);
-	double alpharate_210fr = g_alpha210fr->Eval(irradiation_time);
-	double alpharate_211fr = g_alpha211fr->Eval(irradiation_time);
+	double alpharate_208fr = g_alpha208fr->Eval(t_off);
+	double alpharate_209fr = g_alpha209fr->Eval(t_off);
+	double alpharate_210fr = g_alpha210fr->Eval(t_off);
+	double alpharate_211fr = g_alpha211fr->Eval(t_off);
 //	double alpharate_net = alpharate_208fr+alpharate_209fr+alpharate_210fr+alpharate_211fr;
 
 	TLatex l;
