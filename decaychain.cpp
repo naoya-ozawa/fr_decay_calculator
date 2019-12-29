@@ -222,7 +222,6 @@ double Be_degraded(double beam_energy){
 	return beam_energy - (E_loss/18.);
 }
 
-
 // Estimate the normalized production based on Stancari2006
 double normprod(double incident_energy, int A){
 	// normalized production data from Stancari2006
@@ -336,7 +335,6 @@ double ionization(double T, double E_wf, double E_ip, double sw){
 	return ni_ratio(T,E_wf,E_ip,sw) / (1.0 + ni_ratio(T,E_wf,E_ip,sw));
 }
 
-
 // Diffusion coefficient calculation
 double Au_selfdiffusion(double T){
   double Tm = 1338.0; // melting point (K)
@@ -380,13 +378,13 @@ double range(double peak_energy,double incident_energy){
 double depth_Fr(double incident_energy, int isotope){
 	// energy: MeV/u (injection energy into Au target)
 	if (isotope == 208){
-		double peak = 115.; // MeV based on stancari2006 plot
+		double peak = 113.; // MeV based on stancari2006 plot
 		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
 	}else if (isotope == 209){
-		double peak = 100.; // MeV based on stancari2006 plot
+		double peak = 102.; // MeV based on stancari2006 plot
 		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
 	}else if (isotope == 210){
-		double peak = 90.; // MeV based on stancari2006 plot
+		double peak = 91.; // MeV based on stancari2006 plot
 		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
 	}else if (isotope == 211){
 		double peak = 82.; // MeV based on stancari2006 plot
