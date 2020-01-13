@@ -649,6 +649,7 @@ int main(int argc, char** argv){
 	double p_210_energyh = normprod(Be_degraded(beam_energy*1.03),210)*primaryFlux - p_210;
 	double p_210_energyl = normprod(Be_degraded(beam_energy*0.97),210)*primaryFlux - p_210;
 	double p_210_cs = 0.2 * p_210;
+
 	double varesc = y_Fr(tau_AZ(210,"Fr"),D_m(T,210),depth_Fr(Be_degraded(beam_energy),210));
 	double varesc_energyh = y_Fr(tau_AZ(210,"Fr"),D_m(T,210),depth_Fr(Be_degraded(beam_energy*0.97),210)) - varesc;
 	double varesc_energyl = varesc - y_Fr(tau_AZ(210,"Fr"),D_m(T,210),depth_Fr(Be_degraded(beam_energy*1.03),210));
@@ -770,6 +771,91 @@ int main(int argc, char** argv){
 	l_210->DrawLatex(0.1,0.1,Form("#varepsilon_{transportation} #varepsilon_{desorption} (T) = %3.3f #pm %3.3f (stat.) ^{+%3.3f}_{-%3.3f} (syst.)",eff_td,eff_td_stat,eff_td_sysh,eff_td_sysl));
 
 	l_210->DrawLatex(0.1,0.05,Form("#varepsilon_{transportation} > %3.3f %%",(eff_td-eff_td_sysl)*100.));
+
+
+	TCanvas *c_R = new TCanvas("c_R");
+
+	// value
+	l_210->DrawLatex(0.1,0.90,Form("R_{210} = %3.3f",r_210));
+
+	// b_err
+	double fb_berr = TMath::Sqrt((f_208*b_208_err)*(f_208*b_208_err) + (f_209*b_209_err)*(f_209*b_209_err) + (f_210*b_210_err)*(f_210*b_210_err) + (f_211*b_211_err)*(f_211*b_211_err));
+	double r_berr = f_210 * fb_berr / (sum_fb*sum_fb);
+	l_210->DrawLatex(0.15,0.85,Form("#Delta R_{210} (#Delta b_{210}) = #pm%3.3f", r_berr));
+
+	// flux
+	double fb_fluxerr = TMath::Sqrt((f_208_flux*b_208)*(f_208_flux*b_208) + (f_209_flux*b_209)*(f_209_flux*b_209) + (f_210_flux*b_210)*(f_210_flux*b_210) + (f_211_flux*b_211)*(f_211_flux*b_211));
+	double r_fluxerr = TMath::Sqrt((f_210_flux/sum_fb)*(f_210_flux/sum_fb) + (fb_fluxerr/sum_fb)*(fb_fluxerr/sum_fb)*r_210*r_210);
+	l_210->DrawLatex(0.15,0.80,Form("#Delta R_{210} (#Delta I_{{}^{18}O}) = #pm%3.3f", r_fluxerr));
+
+	// energy
+	double fb_energyerrh = TMath::Sqrt((f_208_energyh*b_208)*(f_208_energyh*b_208) + (f_209_energyh*b_209)*(f_209_energyh*b_209) + (f_210_energyh*b_210)*(f_210_energyh*b_210) + (f_211_energyh*b_211)*(f_211_energyh*b_211));
+	double fb_energyerrl = TMath::Sqrt((f_208_energyl*b_208)*(f_208_energyl*b_208) + (f_209_energyl*b_209)*(f_209_energyl*b_209) + (f_210_energyl*b_210)*(f_210_energyl*b_210) + (f_211_energyl*b_211)*(f_211_energyl*b_211));
+	double r_energyerrh = TMath::Sqrt((f_210_energyh/sum_fb)*(f_210_energyh/sum_fb) + (fb_energyerrl/sum_fb)*(fb_energyerrl/sum_fb)*r_210*r_210);
+	double r_energyerrl = TMath::Sqrt((f_210_energyl/sum_fb)*(f_210_energyl/sum_fb) + (fb_energyerrh/sum_fb)*(fb_energyerrh/sum_fb)*r_210*r_210);
+	l_210->DrawLatex(0.15,0.75,Form("#Delta R_{210} (#Delta E_{{}^{18}O}) = +%3.3f, -%3.3f", r_energyerrh, r_energyerrl));
+
+	// temp
+	double fb_temperrh = TMath::Sqrt((f_208_Th*b_208)*(f_208_Th*b_208) + (f_209_Th*b_209)*(f_209_Th*b_209) + (f_210_Th*b_210)*(f_210_Th*b_210) + (f_211_Th*b_211)*(f_211_Th*b_211));
+	double fb_temperrl = TMath::Sqrt((f_208_Tl*b_208)*(f_208_Tl*b_208) + (f_209_Tl*b_209)*(f_209_Tl*b_209) + (f_210_Tl*b_210)*(f_210_Tl*b_210) + (f_211_Tl*b_211)*(f_211_Tl*b_211));
+	double r_temperrh = TMath::Sqrt((f_210_Th/sum_fb)*(f_210_Th/sum_fb) + (fb_temperrl/sum_fb)*(fb_temperrl/sum_fb)*r_210*r_210);
+	double r_temperrl = TMath::Sqrt((f_210_Tl/sum_fb)*(f_210_Tl/sum_fb) + (fb_temperrh/sum_fb)*(fb_temperrh/sum_fb)*r_210*r_210);
+	l_210->DrawLatex(0.15,0.70,Form("#Delta R_{210} (#Delta T_{Au}) = +%3.3f, -%3.3f", r_temperrh, r_temperrl));
+
+	// cs
+	double fb_cserr = TMath::Sqrt((f_208_cs*b_208)*(f_208_cs*b_208) + (f_209_cs*b_209)*(f_209_cs*b_209) + (f_210_cs*b_210)*(f_210_cs*b_210) + (f_211_cs*b_211)*(f_211_cs*b_211));
+	double r_cserr = TMath::Sqrt((f_210_cs/sum_fb)*(f_210_cs/sum_fb) + (fb_cserr/sum_fb)*(fb_cserr/sum_fb)*r_210*r_210);
+	l_210->DrawLatex(0.15,0.65,Form("#Delta R_{210} (#Delta #sigma_{{}^{210}Fr}) = #pm%3.3f", r_cserr));
+
+
+	// exp-data 190330
+	double f210_tsys = fb_tsys*r_210;
+	double f210_ssdsys = fb_ssdsys*r_210;
+	double f210_dtsys = fb_dtsys*r_210;
+	double f210_berr = fb_exp*r_berr;
+	double f210_fluxerr = fb_exp*r_fluxerr;
+	double f210_energyerrh = fb_exp*r_energyerrh;
+	double f210_energyerrl = fb_exp*r_energyerrl;
+	double f210_temperrh = fb_exp*r_temperrh;
+	double f210_temperrl = fb_exp*r_temperrl;
+	double f210_cserr = fb_exp*r_cserr;
+
+	l_210->DrawLatex(0.1,0.55,Form("f_{210, exp} = %3.3f pps",f210_exp));
+	l_210->DrawLatex(0.15,0.50,Form("#Delta f_{210, exp} = #pm%3.3f (stat) #pm%3.3f (t) -%3.3f (#varepsilon_{SSD}) +%3.3f (DT)",f210_stat,f210_tsys,f210_ssdsys,f210_dtsys));
+	l_210->DrawLatex(0.20,0.45,Form("#pm%3.3f (b_{A}) #pm%3.3f (I) ^{+%3.3f}_{-%3.3f} (E) ^{+%3.3f}_{-%3.3f} (T) #pm%3.3f (#sigma)",f210_berr,f210_fluxerr,f210_energyerrh,f210_energyerrl,f210_temperrh,f210_temperrl,f210_cserr));
+
+
+	double eff_tdie_tsys = f210_tsys/p_210;
+	double eff_tdie_ssdsys = f210_ssdsys/p_210;
+	double eff_tdie_dtsys = f210_dtsys/p_210;
+	double eff_tdie_berr = f210_berr/p_210;
+	double eff_tdie_fluxerr = TMath::Sqrt((f210_fluxerr/p_210)*(f210_fluxerr/p_210) + (p_210_flux/p_210)*(p_210_flux/p_210)*eff_tdie*eff_tdie);
+	double eff_tdie_energyerrh = TMath::Sqrt((f210_energyerrh/p_210)*(f210_energyerrh/p_210) + (p_210_energyl/p_210)*(p_210_energyl/p_210)*eff_tdie*eff_tdie);
+	double eff_tdie_energyerrl = TMath::Sqrt((f210_energyerrl/p_210)*(f210_energyerrl/p_210) + (p_210_energyh/p_210)*(p_210_energyh/p_210)*eff_tdie*eff_tdie);
+	double eff_tdie_temperrh = f210_temperrh/p_210;
+	double eff_tdie_temperrl = f210_temperrl/p_210;
+	double eff_tdie_cserr = f210_cserr/p_210;
+
+	l_210->DrawLatex(0.1,0.35,Form("#frac{f_{210, exp}}{P_{210}} = %3.3f #pm%3.3f (stat) #pm%3.3f (t) -%3.3f (#varepsilon_{SSD}) +%3.3f (DT)",eff_tdie,eff_tdie_stat,eff_tdie_tsys,eff_tdie_ssdsys,eff_tdie_dtsys));
+	l_210->DrawLatex(0.15,0.30,Form("#pm%3.3f (b_{A}) #pm%3.3f (I) ^{+%3.3f}_{-%3.3f} (E) ^{+%3.3f}_{-%3.3f} (T) #pm%3.3f (#sigma)",eff_tdie_berr,eff_tdie_fluxerr,eff_tdie_energyerrh,eff_tdie_energyerrl,eff_tdie_temperrh,eff_tdie_temperrl,eff_tdie_cserr));
+
+	l_210->DrawLatex(0.1,0.20,Form("#varepsilon_{ionization} = 1, assume #varepsilon_{desorption} = 1, #varepsilon_{escape} = %3.3f ^{+%3.3f}_{-%3.3f} (E) ^{+%3.3f}_{-%3.3f} (T)",varesc,varesc_energyh,varesc_energyl,varesc_Th,varesc_Tl));
+
+	double eff_t = eff_tdie/varesc;
+	double eff_t_stat = eff_tdie_stat/varesc;
+	double eff_t_tsys = eff_tdie_tsys/varesc;
+	double eff_t_ssdsys = eff_tdie_ssdsys/varesc;
+	double eff_t_dtsys = eff_tdie_dtsys/varesc;
+	double eff_t_berr = eff_tdie_berr/varesc;
+	double eff_t_fluxerr = eff_tdie_fluxerr/varesc;
+	double eff_t_energyerrh = TMath::Sqrt((eff_tdie_energyerrh/varesc)*(eff_tdie_energyerrh/varesc) + (varesc_energyl/varesc)*(varesc_energyl/varesc)*eff_t*eff_t);
+	double eff_t_energyerrl = TMath::Sqrt((eff_tdie_energyerrl/varesc)*(eff_tdie_energyerrl/varesc) + (varesc_energyh/varesc)*(varesc_energyh/varesc)*eff_t*eff_t);
+	double eff_t_temperrh = TMath::Sqrt((eff_tdie_temperrh/varesc)*(eff_tdie_temperrh/varesc) + (varesc_Tl/varesc)*(varesc_Tl/varesc)*eff_t*eff_t);
+	double eff_t_temperrl = TMath::Sqrt((eff_tdie_temperrl/varesc)*(eff_tdie_temperrl/varesc) + (varesc_Th/varesc)*(varesc_Th/varesc)*eff_t*eff_t);
+	double eff_t_cserr = eff_tdie_cserr/varesc;
+
+	l_210->DrawLatex(0.1,0.15,Form("#varepsilon_{transportation} = %3.3f #pm%3.3f (stat) #pm%3.3f (t) -%3.3f (#varepsilon_{SSD}) +%3.3f (DT)",eff_t,eff_t_stat,eff_t_tsys,eff_t_ssdsys,eff_t_dtsys));
+	l_210->DrawLatex(0.15,0.10,Form("#pm%3.3f (b_{A}) #pm%3.3f (I) ^{+%3.3f}_{-%3.3f} (E) ^{+%3.3f}_{-%3.3f} (T) #pm%3.3f (#sigma)",eff_t_berr,eff_t_fluxerr,eff_t_energyerrh,eff_t_energyerrl,eff_t_temperrh,eff_t_temperrl,eff_t_cserr));
 
   rootapp.Run();
 
