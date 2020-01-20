@@ -834,8 +834,9 @@ int main(int argc, char** argv){
 	double eff_tdie_energyerrl = TMath::Sqrt((f210_energyerrl/p_210)*(f210_energyerrl/p_210) + (p_210_energyh/p_210)*(p_210_energyh/p_210)*eff_tdie*eff_tdie);
 	double eff_tdie_temperrh = f210_temperrh/p_210;
 	double eff_tdie_temperrl = f210_temperrl/p_210;
-	double eff_tdie_cserr = f210_cserr/p_210;
+	double eff_tdie_cserr = TMath::Sqrt((f210_cserr/p_210)*(f210_cserr/p_210) + 0.2*0.2*eff_tdie*eff_tdie);
 
+	l_210->DrawLatex(0.1,0.40,Form("From P_{210} = %3.3f #pm %3.3f pps (#sigma),",p_210,p_210_cs));
 	l_210->DrawLatex(0.1,0.35,Form("#frac{f_{210, exp}}{P_{210}} = %3.3f #pm%3.3f (stat) #pm%3.3f (t) -%3.3f (#varepsilon_{SSD}) +%3.3f (DT)",eff_tdie,eff_tdie_stat,eff_tdie_tsys,eff_tdie_ssdsys,eff_tdie_dtsys));
 	l_210->DrawLatex(0.15,0.30,Form("#pm%3.3f (b_{A}) #pm%3.3f (I) ^{+%3.3f}_{-%3.3f} (E) ^{+%3.3f}_{-%3.3f} (T) #pm%3.3f (#sigma)",eff_tdie_berr,eff_tdie_fluxerr,eff_tdie_energyerrh,eff_tdie_energyerrl,eff_tdie_temperrh,eff_tdie_temperrl,eff_tdie_cserr));
 
