@@ -236,8 +236,12 @@ double normprod(double incident_energy, int A){
 	s209->Draw("SAME");
 	s210->Draw("SAME");
 	s211->Draw("SAME");
-
 	double E = incident_energy*18.; // MeV/u --> MeV, incident energy
+	TLine *l_eval = new TLine(E,1.*TMath::Power(10.,-7),E,4.9*TMath::Power(10.,-6));
+	l_eval->SetLineColor(2);
+	l_eval->SetLineStyle(2);
+	l_eval->Draw();
+
 	if (A == 208){
 		return s208->Eval(E);
 	}else if (A==209){
@@ -559,9 +563,9 @@ double Fr_flux(int isotope){
 	const double energy_18O = 7.0; // MeV/u
 	const double current_18O = 4.0; // euA
 	const double Au_temperature = 900.+273.; // K
-	const double T_Be_upstream = 9.75; // um // Haba Gr MEF#101147032 #16
-	const double T_Be_downstream = 9.70; // um // Haba Gr MEF#101147032 #15
-	const double T_Helium = 4.2 + 17.5 + 6.7; // mm // for 11/22 expt
+	const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
+	const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
+	const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
 	const double tau_0_FrAu = 1.9*TMath::Power(10.,-13); // s; Cs-Re from Delhuille2002
 	const double E_ads_FrAu = 2.0; // eV; Cs-Re from Delhuille2002
 
