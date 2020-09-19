@@ -566,14 +566,8 @@ double eua_to_pps(double eua){
 
 // calculate the Fr flux (steady-state) in pps
 // f = ε_{extraction} * normprod * 18-O current
-double Fr_flux(int isotope, bool plot=true){
+double Fr_flux(int isotope, double energy_18O, double current_18O, double Au_temperature, double T_Be_upstream, double T_Be_downstream, double T_Helium, bool plot=true){
 
-	const double energy_18O = 7.0; // MeV/u
-	const double current_18O = 4.0; // euA
-	const double Au_temperature = 900.+273.; // K
-	const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
-	const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
-	const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
 	const double tau_0_FrAu = 1.9*TMath::Power(10.,-13); // s; Cs-Re from Delhuille2002
 	const double E_ads_FrAu = 2.0; // eV; Cs-Re from Delhuille2002
 
@@ -582,12 +576,12 @@ double Fr_flux(int isotope, bool plot=true){
 	double pa = normprod(E,isotope,plot);
 	double J = eua_to_pps(current_18O);
 
-	cout << "T = " << Au_temperature-273. << " degC" << endl;
-	cout << "E = " << E*18. << " MeV" << endl;
+	cout << "==================" << endl;
+	cout << "For " << isotope << "-Fr:" << endl;
 	cout << "ε = " << ee*100. << "%" << endl;
 	cout << "P = " << pa*J << " pps" << endl;
 	cout << "Escape time = " << escape_time(E,tau_0_FrAu,E_ads_FrAu,Au_temperature,isotope,plot) << " s" << endl;
-	cout << isotope << "-Fr flux: ";
+	cout << "Flux = ";
 	return ee * pa * J;
 }
 
@@ -596,8 +590,19 @@ int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
 
+	const double energy_18O = 7.0; // MeV/u
+	const double current_18O = 4.0; // euA
+	const double Au_temperature = 900.+273.; // K
+	const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
+	const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
+	const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
+
+	cout << "T_Au = " << Au_temperature-273. << " degC" << endl;
+	cout << "E_0 = " << energy_18O << " MeV/u --> Be Window --> " << Be_degraded(energy_18O,T_Be_upstream,T_Be_downstream,T_Helium,false)*18. << " MeV" << endl;
+	cout << "J_18-O = " << eua_to_pps(current_18O) << " pps (" << current_18O << " euA)" << endl;
+
 	for (int i=208; i<212; ++i){
-		cout << Fr_flux(i,false) << " pps" << endl;
+		cout << Fr_flux(i,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,false) << " pps" << endl;
 	}
 
 	rootapp.Run();
