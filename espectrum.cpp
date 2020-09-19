@@ -157,7 +157,7 @@ double b_AZ(int A, const char* Z){
 }
 
 // Calculate the primary beam energy (MeV/u) after transmitting through the Be window
-double Be_degraded(double beam_energy, double T_u, double T_d, double T_He){
+double Be_degraded(double beam_energy, double T_u, double T_d, double T_He, bool plot=true){
 	// Fitted parameters from
 	// https://github.com/naoya-ozawa/Be_window_calculations/blob/master/SRIM_calculations/dependence_plotter.cpp
 	double C_E0 = -8.76; // MeV
@@ -166,14 +166,16 @@ double Be_degraded(double beam_energy, double T_u, double T_d, double T_He){
 	double C_He = 0.0875; // MeV/mm_He
 	double T_Be = T_u+T_d;
 
-	TCanvas *c_bedegraded = new TCanvas("c_bedegraded");
-	TF1 *f_bedegraded = new TF1("E_{loss}","[0] + [1]/(18.*x)",6.0,8.0);
-	f_bedegraded->SetParameters(0.,0.);
-	f_bedegraded->FixParameter(0,C_E0+C_Be*(T_Be+T_He));
-	f_bedegraded->FixParameter(1,C_E1);
-	TGraph *g_bedegraded = new TGraph(f_bedegraded);
-	g_bedegraded->SetTitle("Energy loss at Be window;{}^{18}O beam energy (MeV/u);Total energy loss (MeV)");
-	g_bedegraded->Draw("APL");
+	if (plot == true){
+		TCanvas *c_bedegraded = new TCanvas("c_bedegraded");
+		TF1 *f_bedegraded = new TF1("E_{loss}","[0] + [1]/(18.*x)",6.0,8.0);
+		f_bedegraded->SetParameters(0.,0.);
+		f_bedegraded->FixParameter(0,C_E0+C_Be*(T_Be+T_He));
+		f_bedegraded->FixParameter(1,C_E1);
+		TGraph *g_bedegraded = new TGraph(f_bedegraded);
+		g_bedegraded->SetTitle("Energy loss at Be window;{}^{18}O beam energy (MeV/u);Total energy loss (MeV)");
+		g_bedegraded->Draw("APL");
+	}
 
 	double E_loss = C_E0 + (C_E1/(beam_energy*18.)) + C_Be*T_Be + C_He*T_He; // MeV
 //	cout << "Degraded energy: " << E*18.-E_loss << " MeV" << endl;
@@ -181,7 +183,7 @@ double Be_degraded(double beam_energy, double T_u, double T_d, double T_He){
 }
 
 // Estimate the normalized production based on Stancari2006
-double normprod(double incident_energy, int A){
+double normprod(double incident_energy, int A, bool plot=true){
 	// normalized production data from Stancari2006
 	double energy[10] = {82.,86.,90.,94.,98.,102.,106.,110.,114.,118.}; // MeV incident
 	double fr208[10] = {0.0,0.0,0.0,1.8,2.1e+01,3.1e+03,4.7e+04,2.3e+05,5.9e+05,1.8e+06}; // Hz for j = 1e+12 particles/s
@@ -195,7 +197,6 @@ double normprod(double incident_energy, int A){
 		fr211[i] /= TMath::Power(10.,12);
 	}
 
-	TCanvas *c_normprod = new TCanvas("c_normprod");
 	TGraph *g208 = new TGraph(10,energy,fr208);
 	TSpline3 *s208 = new TSpline3("Spline Fit for 208",g208);
 	g208->SetTitle("{}^{208}Fr");
@@ -224,23 +225,28 @@ double normprod(double incident_energy, int A){
 	g211->SetLineWidth(2);
 	s211->SetLineColor(5);
 	s211->SetLineWidth(2);
-	TMultiGraph *mg_normprod = new TMultiGraph();
-	mg_normprod->SetTitle("Normalized Production Based on [Stancari2006];Incident {}^{18}O beam energy (MeV);Normalized production P/j");
-	mg_normprod->Add(g208);
-	mg_normprod->Add(g209);
-	mg_normprod->Add(g210);
-	mg_normprod->Add(g211);
-	mg_normprod->Draw("AP*");
-	c_normprod->BuildLegend();
-	s208->Draw("SAME");
-	s209->Draw("SAME");
-	s210->Draw("SAME");
-	s211->Draw("SAME");
+	if (plot == true){
+		TCanvas *c_normprod = new TCanvas("c_normprod");
+		TMultiGraph *mg_normprod = new TMultiGraph();
+		mg_normprod->SetTitle("Normalized Production Based on [Stancari2006];Incident {}^{18}O beam energy (MeV);Normalized production P/j");
+		mg_normprod->Add(g208);
+		mg_normprod->Add(g209);
+		mg_normprod->Add(g210);
+		mg_normprod->Add(g211);
+		mg_normprod->Draw("AP*");
+		c_normprod->BuildLegend();
+		s208->Draw("SAME");
+		s209->Draw("SAME");
+		s210->Draw("SAME");
+		s211->Draw("SAME");
+	}
 	double E = incident_energy*18.; // MeV/u --> MeV, incident energy
-	TLine *l_eval = new TLine(E,1.*TMath::Power(10.,-7),E,4.9*TMath::Power(10.,-6));
-	l_eval->SetLineColor(2);
-	l_eval->SetLineStyle(2);
-	l_eval->Draw();
+	if (plot == true){
+		TLine *l_eval = new TLine(E,1.*TMath::Power(10.,-7),E,4.9*TMath::Power(10.,-6));
+		l_eval->SetLineColor(2);
+		l_eval->SetLineStyle(2);
+		l_eval->Draw();
+	}
 
 	if (A == 208){
 		return s208->Eval(E);
@@ -305,7 +311,7 @@ double range(double peak_energy,double incident_energy){
 	}
 }
 
-double depth_Fr(double incident_energy, int isotope, int draw = 1){
+double depth_Fr(double incident_energy, int isotope, bool plot=true){
 	// energy: MeV/u (injection energy into Au target)
 	// use the derivative of normalized production
 
@@ -324,7 +330,7 @@ double depth_Fr(double incident_energy, int isotope, int draw = 1){
 
 
 	// obtain energy dependence of dEdX
-	if (draw == 1){
+	if (plot == true){
 		TCanvas *c_Fr_dedx = new TCanvas("c_Fr_dedx");
 	}
 
@@ -334,12 +340,12 @@ double depth_Fr(double incident_energy, int isotope, int draw = 1){
 	g_dedx->SetTitle("Energy loss <dE/dX> of {}^{18}O in Au;Beam Energy E (MeV);<dE/dX> (MeV/(mg/cm^{2}))");
 	TF1 *f_dedx = new TF1("f_dedx","[0]+[1]*TMath::Power(x,[2])",50.,150.);
 	f_dedx->SetParameters(1.,1.,-0.3);
-	if (draw == 1){
+	if (plot == true){
 		g_dedx->Fit("f_dedx");
 	}else{
 		g_dedx->Fit("f_dedx","Q");
 	}
-	if (draw == 1){
+	if (plot == true){
 		g_dedx->Draw("AP*");
 		f_dedx->Draw("SAME");
 	}
@@ -394,7 +400,7 @@ double depth_Fr(double incident_energy, int isotope, int draw = 1){
 	dg211->SetLineWidth(2);
 	ds211->SetLineColor(5);
 	ds211->SetLineWidth(2);
-	if (draw == 1){
+	if (plot == true){
 		TCanvas *c_depth_Fr = new TCanvas("c_depth_Fr");
 		TMultiGraph *mg_depth_Fr = new TMultiGraph();
 		mg_depth_Fr->SetTitle("Evaporation Cross Section Based on [Stancari2006];Incident {}^{18}O beam energy (MeV);Fusion-evaporation cross section #sigma_{EvR} (mb)");
@@ -432,7 +438,7 @@ double depth_Fr(double incident_energy, int isotope, int draw = 1){
 			peak211 = e;
 		}
 	}
-	if (draw == 1){
+	if (plot == true){
 		TLine *l_peak208 = new TLine(peak208,1.,peak208,200.);
 		l_peak208->SetLineColor(3);
 		l_peak208->SetLineWidth(3);
@@ -491,7 +497,7 @@ double des_eff_Fr(double tau0, double E_ads, double T){
 }
 
 // ε_{extraction} = ε_{transportation} ε_{desorption} ε_{ionization} ε_{escape}
-double extraction_eff(double incident_energy, double temp, int A){
+double extraction_eff(double incident_energy, double temp, int A, bool plot=true){
 
 	const double E_wf_Mo = 4.6; // eV
 	const double E_wf_Au = 5.1; // eV
@@ -506,43 +512,45 @@ double extraction_eff(double incident_energy, double temp, int A){
 	double des_eff = des_eff_Fr(tau_0_FrAu,E_ads_FrAu,temp); // desorption efficiency from the Au surface before decay
 	double trans_eff = 1.0; // transportation efficiency from the target to the MCP surface (assumption)
 
-	double escape = y_Fr(tau_AZ(A,"Fr"),D_m(temp,A),depth_Fr(incident_energy,A))*ionization(temp,E_wf_Au,E_ip_Fr,sw_Fr)*des_eff*trans_eff;
+	double escape = y_Fr(tau_AZ(A,"Fr"),D_m(temp,A),depth_Fr(incident_energy,A,plot))*ionization(temp,E_wf_Au,E_ip_Fr,sw_Fr)*des_eff*trans_eff;
 
 	return escape;
 }
 
-double escape_time(double incident_energy, double tau0, double E_ads, double T, int A){
+double escape_time(double incident_energy, double tau0, double E_ads, double T, int A, bool plot=true){
 	// based on Fujioka1981 & Delhuille2002
 	double kB = 8.6*TMath::Power(10.,-5); // eV/K
 
-	// plot temperature-dependence and energy-dependence
-	TCanvas *c_escape_time = new TCanvas("c_escape_time");
-	c_escape_time->Divide(1,2);
+	if (plot == true){
+		// plot temperature-dependence and energy-dependence
+		TCanvas *c_escape_time = new TCanvas("c_escape_time");
+		c_escape_time->Divide(1,2);
 
-	c_escape_time->cd(1);
-	TGraph *g_et_tempdep = new TGraph();
-	g_et_tempdep->SetTitle(Form("Temperature dependence of escape time at E_{{}^{18}O} = %3.1f MeV;Au temperature (K);#tau = #tau_{esc}+#tau_{des} (s)",incident_energy*18.));
-	for (int i=0; i<200; ++i){
-		double temp = 800. + 273. + double(i);
-		double time = depth_Fr(incident_energy,A,0)*depth_Fr(incident_energy,A,0)/(3.*D_m(temp,A)) + tau0 * TMath::Exp(E_ads/(kB*temp));
-		g_et_tempdep->SetPoint(i,temp,time);
+		c_escape_time->cd(1);
+		TGraph *g_et_tempdep = new TGraph();
+		g_et_tempdep->SetTitle(Form("Temperature dependence of escape time at E_{{}^{18}O} = %3.1f MeV;Au temperature (K);#tau = #tau_{esc}+#tau_{des} (s)",incident_energy*18.));
+		for (int i=0; i<200; ++i){
+			double temp = 800. + 273. + double(i);
+			double time = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(3.*D_m(temp,A)) + tau0 * TMath::Exp(E_ads/(kB*temp));
+			g_et_tempdep->SetPoint(i,temp,time);
+		}
+		g_et_tempdep->Draw("ALP");
+
+
+		c_escape_time->cd(2);
+		TGraph *g_et_enerdep = new TGraph();
+		g_et_enerdep->SetTitle(Form("Energy dependence of escape time at T_{Au} = %3.1f degC;{}^{18}O energy (MeV);#tau = #tau_{esc}+#tau_{des} (s)",T-273));
+		for (int i=0; i<100; ++i){
+			double ener = 6. + double(i)/50.;
+			double time = depth_Fr(ener,A,false)*depth_Fr(ener,A,false)/(3.*D_m(T,A)) + tau0 * TMath::Exp(E_ads/(kB*T));
+			g_et_enerdep->SetPoint(i,ener,time);
+		}
+		g_et_enerdep->Draw("ALP");
 	}
-	g_et_tempdep->Draw("ALP");
 
-
-	c_escape_time->cd(2);
-	TGraph *g_et_enerdep = new TGraph();
-	g_et_enerdep->SetTitle(Form("Energy dependence of escape time at T_{Au} = %3.1f degC;{}^{18}O energy (MeV);#tau = #tau_{esc}+#tau_{des} (s)",T-273));
-	for (int i=0; i<100; ++i){
-		double ener = 6. + double(i)/50.;
-		double time = depth_Fr(ener,A,0)*depth_Fr(ener,A,0)/(3.*D_m(T,A)) + tau0 * TMath::Exp(E_ads/(kB*T));
-		g_et_enerdep->SetPoint(i,ener,time);
-	}
-	g_et_enerdep->Draw("ALP");
-
-	double t_ave = depth_Fr(incident_energy,A,0)*depth_Fr(incident_energy,A,0)/(3.*D_m(T,A));
+	double t_ave = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(3.*D_m(T,A));
 	double tau_D = tau0 * TMath::Exp(E_ads/(kB*T));
-	if (depth_Fr(incident_energy,A,0) < 0.0){
+	if (depth_Fr(incident_energy,A,false) < 0.0){
 		return 0.0;
 	}else{
 		return t_ave+tau_D;
@@ -558,7 +566,7 @@ double eua_to_pps(double eua){
 
 // calculate the Fr flux (steady-state) in pps
 // f = ε_{extraction} * normprod * 18-O current
-double Fr_flux(int isotope){
+double Fr_flux(int isotope, bool plot=true){
 
 	const double energy_18O = 7.0; // MeV/u
 	const double current_18O = 4.0; // euA
@@ -569,16 +577,16 @@ double Fr_flux(int isotope){
 	const double tau_0_FrAu = 1.9*TMath::Power(10.,-13); // s; Cs-Re from Delhuille2002
 	const double E_ads_FrAu = 2.0; // eV; Cs-Re from Delhuille2002
 
-	double E = Be_degraded(energy_18O,T_Be_upstream,T_Be_downstream,T_Helium);
-	double ee = extraction_eff(E,Au_temperature,isotope);
-	double pa = normprod(E,isotope);
+	double E = Be_degraded(energy_18O,T_Be_upstream,T_Be_downstream,T_Helium,plot);
+	double ee = extraction_eff(E,Au_temperature,isotope,plot);
+	double pa = normprod(E,isotope,plot);
 	double J = eua_to_pps(current_18O);
 
 	cout << "T = " << Au_temperature-273. << " degC" << endl;
 	cout << "E = " << E*18. << " MeV" << endl;
 	cout << "ε = " << ee*100. << "%" << endl;
 	cout << "P = " << pa*J << " pps" << endl;
-	cout << "Escape time = " << escape_time(E,tau_0_FrAu,E_ads_FrAu,Au_temperature,isotope) << " s" << endl;
+	cout << "Escape time = " << escape_time(E,tau_0_FrAu,E_ads_FrAu,Au_temperature,isotope,plot) << " s" << endl;
 	cout << isotope << "-Fr flux: ";
 	return ee * pa * J;
 }
@@ -588,8 +596,9 @@ int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
 
-	double f = Fr_flux(210);
-	cout << f << " pps" << endl;
+	for (int i=208; i<212; ++i){
+		cout << Fr_flux(i,false) << " pps" << endl;
+	}
 
 	rootapp.Run();
 
