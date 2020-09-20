@@ -1,5 +1,6 @@
 #include <iostream>
 #include <TCanvas.h>
+#include <TPie.h>
 #include <TF1.h>
 #include <TMultiGraph.h>
 #include <TGraph.h>
@@ -581,10 +582,22 @@ double Fr_flux(int isotope, double energy_18O, double current_18O, double Au_tem
 	cout << "ε = " << ee*100. << "%" << endl;
 	cout << "P = " << pa*J << " pps" << endl;
 	cout << "Escape time = " << escape_time(E,tau_0_FrAu,E_ads_FrAu,Au_temperature,isotope,plot) << " s" << endl;
-	cout << "Flux = ";
+	cout << "Flux = " << ee*pa*J << " pps" << endl;
 	return ee * pa * J;
 }
 
+void prod_chart(double *values, int *colors, const char **lbls, double E_0, double J, double T_Au){
+	TCanvas *c_prod_chart = new TCanvas("c_prod_chart");
+	const char* ttl = Form("#splitline{Fr isotopes extracted from Au target}{#left(E_{0} = %3.1f MeV/u, J = %3.1f e#muA, T_{Au} = %3.1f #circC#right)}",E_0,J,T_Au);
+	TPie *pie_prod = new TPie("pie_prod",ttl,4,values,colors,lbls);
+	pie_prod->SetRadius(.2);
+	pie_prod->SetLabelsOffset(.01);
+	pie_prod->SetLabelFormat("#splitline{%val (%perc)}{%txt}");
+	pie_prod->SetValueFormat("%.1e");
+	pie_prod->SetAngle3D(0);
+	pie_prod->SetAngularOffset(90);
+	pie_prod->Draw("nol");
+}
 
 int main (int argc, char** argv){
 
@@ -601,9 +614,14 @@ int main (int argc, char** argv){
 	cout << "E_0 = " << energy_18O << " MeV/u --> Be Window --> " << Be_degraded(energy_18O,T_Be_upstream,T_Be_downstream,T_Helium,false)*18. << " MeV" << endl;
 	cout << "J_18-O = " << eua_to_pps(current_18O) << " pps (" << current_18O << " euA)" << endl;
 
-	for (int i=208; i<212; ++i){
-		cout << Fr_flux(i,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,false) << " pps" << endl;
-	}
+	double values[4];
+	values[0] = Fr_flux(208,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,false);
+	values[1] = Fr_flux(209,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,false);
+	values[2] = Fr_flux(210,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,true);
+	values[3] = Fr_flux(211,energy_18O,current_18O,Au_temperature,T_Be_upstream,T_Be_downstream,T_Helium,false);
+	int colors[4] = {3,4,2,5};
+	const char *lbls[4] = {"{}^{208}Fr","{}^{209}Fr","{}^{210}Fr","{}^{211}Fr"};
+	prod_chart(values,colors,lbls,energy_18O,current_18O,Au_temperature-273.);
 
 	rootapp.Run();
 
