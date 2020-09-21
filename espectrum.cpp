@@ -170,9 +170,8 @@ double Be_degraded(double beam_energy, double T_u, double T_d, double T_He, bool
 	if (plot == true){
 		TCanvas *c_bedegraded = new TCanvas("c_bedegraded");
 		TF1 *f_bedegraded = new TF1("E_{loss}","[0] + [1]/(18.*x)",6.0,8.0);
-		f_bedegraded->SetParameters(0.,0.);
-		f_bedegraded->FixParameter(0,C_E0+C_Be*(T_Be+T_He));
-		f_bedegraded->FixParameter(1,C_E1);
+		f_bedegraded->SetParameter(0,C_E0+C_Be*T_Be+C_He*T_He);
+		f_bedegraded->SetParameter(1,C_E1);
 		TGraph *g_bedegraded = new TGraph(f_bedegraded);
 		g_bedegraded->SetTitle("Energy loss at Be window;{}^{18}O beam energy (MeV/u);Total energy loss (MeV)");
 		g_bedegraded->Draw("APL");
