@@ -603,7 +603,7 @@ int main (int argc, char** argv){
 	TRint rootapp("app",&argc,argv);
 
 	const double energy_18O = 7.0; // MeV/u
-	const double current_18O = 4.0; // euA
+	const double current_18O = 6.0; // euA
 	const double Au_temperature = 900.+273.; // K
 
 //	// NP1217-AVF52-02
