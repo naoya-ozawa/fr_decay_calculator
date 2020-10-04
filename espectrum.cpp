@@ -602,16 +602,16 @@ int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
 
-	const double energy_18O = 7.0; // MeV/u
-	const double current_18O = 6.0; // euA
-	const double Au_temperature = 900.+273.; // K
+	const double energy_18O = 7.016; // MeV/u
+	const double current_18O = 3.1; // euA
+	const double Au_temperature = 909.+273.; // K
 
-//	// NP1217-AVF52-02
+//	// NP1712-AVF52-02
 //	const double T_Be_upstream = 9.75; // um // MEF#101435899 #1
 //	const double T_Be_downstream = 9.70; // um // MEF#101435899 #3
 //	const double T_Helium = 4.2+17.5+6.7; // mm // for NP1217-AVF52-03
 
-	// NP1217-AVF52-03
+	// NP1712-AVF52-03
 	const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
 	const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
 	const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
