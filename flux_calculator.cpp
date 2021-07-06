@@ -574,6 +574,8 @@ double database(int timestamp, const char* dataset){
     return I;
   }else if (dataset == "T"){
     return T+273.;
+  }else{
+	return -9999.;
   }
 }
 
