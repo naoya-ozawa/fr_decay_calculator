@@ -242,10 +242,37 @@ double normprod(double incident_energy, int A, bool plot=true){
 	}
 	double E = incident_energy*18.; // MeV/u --> MeV, incident energy
 	if (plot == true){
+		TLatex *poverj = new TLatex();
+		TLine *l_208 = new TLine(81.,s208->Eval(E),119.,s208->Eval(E));
+		l_208->SetLineColor(3);
+		l_208->SetLineStyle(2);
+		l_208->SetLineWidth(2);
+		l_208->Draw();
+		poverj->DrawLatex(82.,s208->Eval(E),Form("%2.1e",s208->Eval(E)));
+		TLine *l_209 = new TLine(81.,s209->Eval(E),119.,s209->Eval(E));
+		l_209->SetLineColor(4);
+		l_209->SetLineStyle(2);
+		l_209->SetLineWidth(2);
+		l_209->Draw();
+		poverj->DrawLatex(82.,s209->Eval(E),Form("%2.1e",s209->Eval(E)));
+		TLine *l_210 = new TLine(81.,s210->Eval(E),119.,s210->Eval(E));
+		l_210->SetLineColor(2);
+		l_210->SetLineStyle(2);
+		l_210->SetLineWidth(2);
+		l_210->Draw();
+		poverj->DrawLatex(82.,s210->Eval(E),Form("%2.1e",s210->Eval(E)));
+		TLine *l_211 = new TLine(81.,s211->Eval(E),119.,s211->Eval(E));
+		l_211->SetLineColor(5);
+		l_211->SetLineStyle(2);
+		l_211->SetLineWidth(2);
+		l_211->Draw();
+		poverj->DrawLatex(82.,s211->Eval(E),Form("%2.1e",s211->Eval(E)));
 		TLine *l_eval = new TLine(E,1.*TMath::Power(10.,-7),E,4.9*TMath::Power(10.,-6));
 		l_eval->SetLineColor(2);
 		l_eval->SetLineStyle(2);
+		l_eval->SetLineWidth(5);
 		l_eval->Draw();
+		poverj->DrawLatex(E+1.,2.5e-6,Form("%3.1f MeV",E));
 	}
 
 	if (A == 208){
