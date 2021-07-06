@@ -602,19 +602,24 @@ int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
 
-	const double energy_18O = 7.016; // MeV/u
-	const double current_18O = 3.1; // euA
-	const double Au_temperature = 909.+273.; // K
+	const double energy_18O = 7.0; // MeV/u
+	const double current_18O = 6.0; // euA
+	const double Au_temperature = 700.+273.; // K
 
 //	// NP1712-AVF52-02
 //	const double T_Be_upstream = 9.75; // um // MEF#101435899 #1
 //	const double T_Be_downstream = 9.70; // um // MEF#101435899 #3
 //	const double T_Helium = 4.2+17.5+6.7; // mm // for NP1217-AVF52-03
 
-	// NP1712-AVF52-03
-	const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
-	const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
-	const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
+	// // NP1712-AVF52-03
+	// const double T_Be_upstream = 10.0; // um // MEF#101435899 #1
+	// const double T_Be_downstream = 10.2; // um // MEF#101435899 #3
+	// const double T_Helium = 7.0; // mm // for NP1217-AVF52-03
+
+	// NP2012-AVF72-01
+	const double T_Be_upstream = 11.2; // um
+	const double T_Be_downstream = 12.4; // um
+	const double T_Helium = 7.0; // mm
 
 	cout << "T_Au = " << Au_temperature-273. << " degC" << endl;
 	cout << "E_0 = " << energy_18O << " MeV/u --> Be Window --> " << Be_degraded(energy_18O,T_Be_upstream,T_Be_downstream,T_Helium,false)*18. << " MeV" << endl;
