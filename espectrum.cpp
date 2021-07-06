@@ -161,10 +161,10 @@ double b_AZ(int A, const char* Z){
 double Be_degraded(double beam_energy, double T_u, double T_d, double T_He, bool plot=true){
 	// Fitted parameters from
 	// https://github.com/naoya-ozawa/Be_window_calculations/blob/master/SRIM_calculations/dependence_plotter.cpp
-	double C_E0 = -8.76; // MeV
-	double C_E1 = 828.91; // MeV*MeV_incident
+	double C_E0 = -9.; // MeV
+	double C_E1 = 800.; // MeV*MeV_incident
 	double C_Be = 0.68; // MeV/um_Be
-	double C_He = 0.0875; // MeV/mm_He
+	double C_He = 0.09; // MeV/mm_He
 	double T_Be = T_u+T_d;
 
 	if (plot == true){
@@ -178,9 +178,9 @@ double Be_degraded(double beam_energy, double T_u, double T_d, double T_He, bool
 		c_bedegraded->cd()->SetGridx();
 		c_bedegraded->cd()->SetGridy();
 		TLatex *l_bedegraded = new TLatex();
-		l_bedegraded->DrawLatex(7.5,15.5,Form("T_{Be:Up} = %3.1f #mum",T_u));
-		l_bedegraded->DrawLatex(7.5,15.3,Form("T_{He} = %3.1f mm",T_He));
-		l_bedegraded->DrawLatex(7.5,15.1,Form("T_{Be:Down} = %3.1f #mum",T_d));
+		l_bedegraded->DrawLatex(7.5,TMath::MaxElement(g_bedegraded->GetN(),g_bedegraded->GetY()),Form("T_{Be:Up} = %3.1f #mum",T_u));
+		l_bedegraded->DrawLatex(7.5,TMath::MaxElement(g_bedegraded->GetN(),g_bedegraded->GetY())-0.2,Form("T_{He} = %3.1f mm",T_He));
+		l_bedegraded->DrawLatex(7.5,TMath::MaxElement(g_bedegraded->GetN(),g_bedegraded->GetY())-0.4,Form("T_{Be:Down} = %3.1f #mum",T_d));
 	}
 
 	double E_loss = C_E0 + (C_E1/(beam_energy*18.)) + C_Be*T_Be + C_He*T_He; // MeV
