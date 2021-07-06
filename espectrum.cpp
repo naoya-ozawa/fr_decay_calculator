@@ -175,6 +175,12 @@ double Be_degraded(double beam_energy, double T_u, double T_d, double T_He, bool
 		TGraph *g_bedegraded = new TGraph(f_bedegraded);
 		g_bedegraded->SetTitle("Energy loss at Be window;{}^{18}O beam energy (MeV/u);Total energy loss (MeV)");
 		g_bedegraded->Draw("APL");
+		c_bedegraded->cd()->SetGridx();
+		c_bedegraded->cd()->SetGridy();
+		TLatex *l_bedegraded = new TLatex();
+		l_bedegraded->DrawLatex(7.5,15.5,Form("T_{Be:Up} = %3.1f #mum",T_u));
+		l_bedegraded->DrawLatex(7.5,15.3,Form("T_{He} = %3.1f mm",T_He));
+		l_bedegraded->DrawLatex(7.5,15.1,Form("T_{Be:Down} = %3.1f #mum",T_d));
 	}
 
 	double E_loss = C_E0 + (C_E1/(beam_energy*18.)) + C_Be*T_Be + C_He*T_He; // MeV
