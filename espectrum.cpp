@@ -518,10 +518,11 @@ double depth_Fr(double incident_energy, int isotope, bool plot=true){
 
 // escape efficiency calculation
 double y_Fr(double tau,double D,double d){
+	// Based on Melconian NIMA 2005
 	double R_Au = 6.0 * 0.1; // mm --> cm
-	double alpha = tau*D/(d*d);
 	double x = R_Au/d;
-	return 0.5 * (1. - TMath::Cos(TMath::ATan(x))) * TMath::Sqrt(alpha) * TMath::TanH(1./TMath::Sqrt(alpha));
+	double alpha = d/TMath::Sqrt(tau*D);
+	return 0.5 * (1. - TMath::Cos(TMath::ATan(x))) * TMath::Exp(-alpha);
 }
 
 // desorption efficiency calculation
@@ -556,37 +557,39 @@ double extraction_eff(double incident_energy, double temp, int A, bool plot=true
 }
 
 double escape_time(double incident_energy, double tau0, double E_ads, double T, int A, bool plot=true){
-	// based on Fujioka1981 & Delhuille2002
+	// based on Melconian2005 & Fujioka1981 & Delhuille2002
 	double kB = 8.6*TMath::Power(10.,-5); // eV/K
 
 	if (plot == true){
 		// plot temperature-dependence and energy-dependence
 		TCanvas *c_escape_time = new TCanvas("c_escape_time");
-		c_escape_time->Divide(1,2);
+		c_escape_time->Divide(2,1);
 
 		c_escape_time->cd(1);
 		TGraph *g_et_tempdep = new TGraph();
-		g_et_tempdep->SetTitle(Form("Temperature dependence of escape time at E_{{}^{18}O} = %3.1f MeV;Au temperature (K);#tau = #tau_{esc}+#tau_{des} (s)",incident_energy*18.));
+		g_et_tempdep->SetTitle(Form("Temperature dependence of {}^{%d}Fr escape time at E_{{}^{18}O} = %3.1f MeV;Au temperature (#circC);#tau = #tau_{dif}+#tau_{des} (s)",A,incident_energy*18.));
 		for (int i=0; i<200; ++i){
 			double temp = 800. + 273. + double(i);
-			double time = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(3.*D_m(temp,A)) + tau0 * TMath::Exp(E_ads/(kB*temp));
-			g_et_tempdep->SetPoint(i,temp,time);
+			double time = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(4.*D_m(temp,A)) + tau0 * TMath::Exp(E_ads/(kB*temp));
+			g_et_tempdep->SetPoint(i,temp-273.,time);
 		}
 		g_et_tempdep->Draw("ALP");
 
-
 		c_escape_time->cd(2);
-		TGraph *g_et_enerdep = new TGraph();
-		g_et_enerdep->SetTitle(Form("Energy dependence of escape time at T_{Au} = %3.1f degC;{}^{18}O energy (MeV);#tau = #tau_{esc}+#tau_{des} (s)",T-273));
-		for (int i=0; i<100; ++i){
-			double ener = 6. + double(i)/50.;
-			double time = depth_Fr(ener,A,false)*depth_Fr(ener,A,false)/(3.*D_m(T,A)) + tau0 * TMath::Exp(E_ads/(kB*T));
-			g_et_enerdep->SetPoint(i,ener,time);
+		TGraph *g_ep_tempdep = new TGraph();
+		g_ep_tempdep->SetTitle(Form("Temperature dependence of {}^{%d}Fr escape probability at E_{{}^{18}O} = %3.1f MeV;Au temperature (#circC);P_{escape} = P_{dif}#timesP_{des} (%%)",A,incident_energy*18.));
+		for (int i=0; i<200; ++i){
+			double temp = 800. + 273. + double(i);
+			double tau_0_FrAu = 1.9*TMath::Power(10.,-13); // s; Cs-Re from Delhuille2002
+			double E_ads_FrAu = 2.0; // eV; Cs-Re from Delhuille2002
+			double prob = 100. * TMath::Exp(-depth_Fr(incident_energy,A,false)/TMath::Sqrt(tau_AZ(A,"Fr")*D_m(temp,A))) * des_eff_Fr(tau_0_FrAu,E_ads_FrAu,temp);
+			g_ep_tempdep->SetPoint(i,temp-273.,prob);
 		}
-		g_et_enerdep->Draw("ALP");
+		g_ep_tempdep->Draw("ALP");
+
 	}
 
-	double t_ave = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(3.*D_m(T,A));
+	double t_ave = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(4.*D_m(T,A));
 	double tau_D = tau0 * TMath::Exp(E_ads/(kB*T));
 	if (depth_Fr(incident_energy,A,false) < 0.0){
 		return 0.0;
