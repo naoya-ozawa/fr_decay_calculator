@@ -436,7 +436,7 @@ double depth_Fr(double incident_energy, int isotope, bool plot=true){
 	if (plot == true){
 		TCanvas *c_depth_Fr = new TCanvas("c_depth_Fr");
 		TMultiGraph *mg_depth_Fr = new TMultiGraph();
-		mg_depth_Fr->SetTitle("Evaporation Cross Section Based on [Stancari2006];Incident {}^{18}O beam energy (MeV);Fusion-evaporation cross section #sigma_{EvR} (mb)");
+		mg_depth_Fr->SetTitle("Evaporation Cross Section Based on [Stancari2006];{}^{18}O beam energy in lab frame (MeV);Fusion-evaporation cross section #sigma_{EvR} (mb)");
 		mg_depth_Fr->Add(dg208);
 		mg_depth_Fr->Add(dg209);
 		mg_depth_Fr->Add(dg210);
@@ -502,7 +502,12 @@ double depth_Fr(double incident_energy, int isotope, bool plot=true){
 		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
 	}else if (isotope == 210){
 		double peak = peak210; // MeV based on stancari2006 plot
-		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
+		TLatex *l_peak = new TLatex();
+		double d_210 = range(peak,incident_energy)*TMath::Power(10.,-4); // cm
+		double d_stop = range(0.0,incident_energy); // um
+		l_peak->DrawLatex(peak,100.,Form("{}^{210}Fr production depth: %3.1f #mum",d_210*TMath::Power(10.,4)));
+		l_peak->DrawLatex(peak,80.,Form("{}^{18}O stopping depth: %3.1f #mum",d_stop));
+		return d_210;
 	}else if (isotope == 211){
 		double peak = peak211; // MeV based on stancari2006 plot
 		return range(peak,incident_energy)*TMath::Power(10.,-4); // cm
