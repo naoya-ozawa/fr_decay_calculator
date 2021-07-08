@@ -573,18 +573,25 @@ double escape_time(double incident_energy, double tau0, double E_ads, double T, 
 			double temp = 800. + 273. + double(i);
 			double time = depth_Fr(incident_energy,A,false)*depth_Fr(incident_energy,A,false)/(4.*D_m(temp,A)) + tau0 * TMath::Exp(E_ads/(kB*temp));
 			g_et_tempdep->SetPoint(i,temp-273.,time);
+			c_escape_time->cd(1)->SetGridx();
+			c_escape_time->cd(1)->SetGridy();
 		}
 		g_et_tempdep->Draw("ALP");
 
 		c_escape_time->cd(2);
 		TGraph *g_ep_tempdep = new TGraph();
-		g_ep_tempdep->SetTitle(Form("Temperature dependence of {}^{%d}Fr escape probability at E_{{}^{18}O} = %3.1f MeV;Au temperature (#circC);P_{escape} = P_{dif}#timesP_{des} (%%)",A,incident_energy*18.));
+		g_ep_tempdep->SetTitle(Form("Temperature dependence of {}^{%d}Fr^{+} escape probability at E_{{}^{18}O} = %3.1f MeV;Au temperature (#circC);P_{escape} = P_{dif}#timesP_{des}#timesP_{ion} (%%)",A,incident_energy*18.));
 		for (int i=0; i<200; ++i){
 			double temp = 800. + 273. + double(i);
 			double tau_0_FrAu = 1.9*TMath::Power(10.,-13); // s; Cs-Re from Delhuille2002
 			double E_ads_FrAu = 2.0; // eV; Cs-Re from Delhuille2002
-			double prob = 100. * TMath::Exp(-depth_Fr(incident_energy,A,false)/TMath::Sqrt(tau_AZ(A,"Fr")*D_m(temp,A))) * des_eff_Fr(tau_0_FrAu,E_ads_FrAu,temp);
+			double E_wf_Au = 5.1; // eV
+			double E_ip_Fr = 4.07; // eV
+			double sw_Fr = 0.5; // statistical weight factor for Fr
+			double prob = 100. * TMath::Exp(-depth_Fr(incident_energy,A,false)/TMath::Sqrt(tau_AZ(A,"Fr")*D_m(temp,A))) * des_eff_Fr(tau_0_FrAu,E_ads_FrAu,temp) * ionization(temp,E_wf_Au,E_ip_Fr,sw_Fr);
 			g_ep_tempdep->SetPoint(i,temp-273.,prob);
+			c_escape_time->cd(2)->SetGridx();
+			c_escape_time->cd(2)->SetGridy();
 		}
 		g_ep_tempdep->Draw("ALP");
 
