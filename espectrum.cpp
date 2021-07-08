@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <TCanvas.h>
 #include <TPie.h>
 #include <TF1.h>
@@ -643,9 +644,13 @@ int main (int argc, char** argv){
 
 	TRint rootapp("app",&argc,argv);
 
-	const double energy_18O = 7.0; // MeV/u
-	const double current_18O = 12.0; // euA
-	const double Au_temperature = 1000.+273.; // K
+	if (argc != 4){
+		cout << "usage: ./espectrum <energy [MeV/u]> <current [euA]> <temperature [degC]>" << endl;
+		exit(1);
+	}
+	const double energy_18O = stod(argv[1]); // MeV/u
+	const double current_18O = stod(argv[2]); // euA
+	const double Au_temperature = stod(argv[3])+273.; // K
 
 //	// NP1712-AVF52-02
 //	const double T_Be_upstream = 9.75; // um // MEF#101435899 #1
