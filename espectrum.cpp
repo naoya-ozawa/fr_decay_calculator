@@ -338,7 +338,7 @@ double range(double peak_energy,double incident_energy){
 	// incident_energy: MeV/u
 	double d = -2.6 + 0.34 * incident_energy*18. - 0.31 * peak_energy; // um
 	if (d < 0.0){
-		return -9999.;
+		return 0.0;
 	}else{
 		return d;
 	}
@@ -628,7 +628,7 @@ double Fr_flux(int isotope, double energy_18O, double current_18O, double Au_tem
 
 void prod_chart(double *values, int *colors, const char **lbls, double E_0, double J, double T_Au){
 	TCanvas *c_prod_chart = new TCanvas("c_prod_chart");
-	const char* ttl = Form("#splitline{Fr isotopes extracted from Au target}{#left(E_{0} = %3.1f MeV/u, J = %3.1f e#muA, T_{Au} = %3.1f #circC#right)}",E_0,J,T_Au);
+	const char* ttl = Form("#splitline{Fr isotopes extracted from Au target}{#left(E_{0} = %3.1f MeV/u, J = %3.1f p#muA, T_{Au} = %3.1f #circC#right)}",E_0,J/6.,T_Au);
 	TPie *pie_prod = new TPie("pie_prod",ttl,4,values,colors,lbls);
 	pie_prod->SetRadius(.2);
 	pie_prod->SetLabelsOffset(.01);
@@ -644,8 +644,8 @@ int main (int argc, char** argv){
 	TRint rootapp("app",&argc,argv);
 
 	const double energy_18O = 7.0; // MeV/u
-	const double current_18O = 6.0; // euA
-	const double Au_temperature = 700.+273.; // K
+	const double current_18O = 12.0; // euA
+	const double Au_temperature = 1000.+273.; // K
 
 //	// NP1712-AVF52-02
 //	const double T_Be_upstream = 9.75; // um // MEF#101435899 #1
